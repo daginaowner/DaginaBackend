@@ -5,7 +5,28 @@ from flask import make_response
 import os
 import datetime
 
-def signup_service(userdata):
+def seller_signup_service(userdata):
+    try:
+        email_check = User.objects[:1](email=userdata['email'])
+        if email_check:
+            return {"status": 404, "message": "email already exists"}
+        else:
+            name = userdata['name']
+            email = userdata['email']
+            image = userdata['image']
+            mobile = userdata['mobile']
+            password = encrypt_password(userdata['password'])
+
+            user = User(name=name, email=email, image=image,
+                        mobile=mobile, password=password)
+            user.save()
+
+            return make_response({'message': 'succesfully inserted'}, 200)
+
+    except Exception as e:
+        return make_response({'message': str(e)}, 404)
+
+def buyer_signup_service(userdata):
     try:
         email_check = User.objects[:1](email=userdata['email'])
         if email_check:

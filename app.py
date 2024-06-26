@@ -8,9 +8,10 @@ app = Flask(__name__)
 
 config = dotenv_values(".env")
 mongo_uri = config.get("MONGO_URI")
+db_name = config.get("DB_NAME")
 
 client = MongoClient(mongo_uri)
-db = client.get_default_database("DaginaDB")
+db = client.get_default_database(db_name)
 
 CORS(app)
 

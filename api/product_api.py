@@ -36,7 +36,7 @@ def get_seller_products(sellerId):
     return get_seller_products_service(sellerId,DB)
 
 #getting producst based on clicks
-@user_route.route("api/products/", methods=['GET'])
+@user_route.route("api/products/clicks", methods=['GET'])
 def get_clicks_products():
     # data = request.get_json()
     return get_clicks_products_service(DB)

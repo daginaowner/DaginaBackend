@@ -46,3 +46,7 @@ def get_clicks_products():
 def get_price_range_products(productId):
     return get_product_details_service(productId,DB)
 
+#finding products details based on search field
+@user_route.route("api/products/<string:searchInput>", methods=['GET'])
+def get_price_range_products(searchInput):
+    return get_searched_products_service(searchInput,DB)

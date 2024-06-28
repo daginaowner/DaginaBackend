@@ -1,5 +1,5 @@
 from flask import Blueprint, request
-from services.product_services import get_products_service,get_categories_products_service,get_clicks_products_service,get_price_range_products_service,get_product_details_service
+from .product_services import get_products_service,get_categories_products_service,get_clicks_products_service,get_price_range_products_service,get_product_details_service
 from pymongo import MongoClient
 from dotenv import dotenv_values
 
@@ -17,7 +17,7 @@ product_route = Blueprint('product_route', __name__)
 @product_route.route("api/products", methods=['GET'])
 def get_products():
     # data = request.get_json()
-    return get_products_service()
+    return get_products_service(DB)
 
 #getting products based on category
 @product_route.route("api/products/<string:category>", methods=['GET'])
@@ -50,3 +50,4 @@ def get_price_range_products(productId):
 @product_route.route("api/products/<string:searchInput>", methods=['GET'])
 def get_price_range_products(searchInput):
     return get_searched_products_service(searchInput,DB)
+

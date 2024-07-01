@@ -16,3 +16,11 @@ def validate_token():
         return True, encoded_info
     except Exception as e:
         return False , "Invalid Token"
+    
+"""
+Sample way to use it
+state, info = validate_token()
+    if state:
+        return func(info, add_params)
+    return {"status":"fail", "msg": info}
+"""

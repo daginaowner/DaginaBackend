@@ -1,24 +1,17 @@
 from flask import Blueprint, request
 from .product_service import get_products_service,get_categories_products_service,get_price_range_products_service,update_no_of_clicks,get_seller_products_service,get_clicks_products_service
-from pymongo import MongoClient
-from dotenv import dotenv_values
+
 from flask import jsonify
 
-config = dotenv_values(".env")
-mongo_uri = config.get("MONGO_URI")
-db_name = config.get("DB_NAME")
 
-client = MongoClient(mongo_uri)
-DB = client.get_default_database(db_name)
 
 product_route = Blueprint('product_route', __name__)
-
 
 #getting general products
 @product_route.route("/api/products", methods=['GET'])
 def get_products():
     try:
-        response = get_products_service(DB)
+        response = get_products_service()
         return jsonify(response)
     
     except Exception as e:
@@ -30,7 +23,7 @@ def get_products():
 def get_categories_products(category):
     try:
     
-        response =  get_categories_products_service(category,DB)
+        response =  get_categories_products_service(category)
         return jsonify(response)
     
     except Exception as e:
@@ -40,7 +33,7 @@ def get_categories_products(category):
 @product_route.route("/api/products/pricerange/<string:pricerange>", methods=['GET'])
 def get_price_range_products(pricerange):
     try:
-        response =  get_price_range_products_service(pricerange,DB)
+        response =  get_price_range_products_service(pricerange)
         return jsonify(response)
     except Exception as e:
         return jsonify({"error": str(e)}), 500
@@ -49,7 +42,7 @@ def get_price_range_products(pricerange):
 @product_route.route("/api/products/sellerId/<string:sellerId>", methods=['GET'])
 def get_seller_products(sellerId):
     try : 
-        response =  get_seller_products_service(sellerId,DB)
+        response =  get_seller_products_service(sellerId)
         return jsonify(response)
     except Exception as e:
         return jsonify({"error": str(e)}), 500
@@ -61,7 +54,7 @@ def get_seller_products(sellerId):
 def get_clicks_products():
     try:
     # data = request.get_json()
-        response =  get_clicks_products_service(DB)
+        response =  get_clicks_products_service()
         return jsonify(response)
     except Exception as e:
         return jsonify({"error": str(e)}), 500
@@ -88,7 +81,7 @@ def update_clicks():
 
 
         
-        response = update_no_of_clicks(DB, product_id, no_of_clicks)
+        response = update_no_of_clicks( product_id, no_of_clicks)
         return jsonify(response)
     
     except Exception as e:

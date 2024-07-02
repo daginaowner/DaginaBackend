@@ -1,14 +1,10 @@
+from .mongo_connect import DB as client
 from pymongo import MongoClient
 from flask import jsonify
 from dotenv import dotenv_values
 import random
 from bson import ObjectId
-config = dotenv_values(".env")
-mongo_uri = config.get("MONGO_URI")
-db_name = config.get("DB_NAME")
 
-client = MongoClient(mongo_uri)
-DB = client.get_default_database(db_name)
 
 def serialize_document(doc):
     """
@@ -23,7 +19,7 @@ def serialize_document(doc):
     else:
         return doc
 
-def get_products_service(client):
+def get_products_service():
     try:
         pipeline = [
             {
@@ -91,7 +87,7 @@ def get_products_service(client):
 
 
 
-def get_categories_products_service(category, client):
+def get_categories_products_service(category):
         try:
             pipeline = [
                 {
@@ -157,7 +153,7 @@ def get_categories_products_service(category, client):
             return {"status": "error", "message": str(e)}
 
 
-def get_price_range_products_service(pricerange, client):
+def get_price_range_products_service(pricerange):
         try:
             pipeline = [
                 {
@@ -223,7 +219,7 @@ def get_price_range_products_service(pricerange, client):
             return {"status": "error", "message": str(e)}
 
 
-def get_seller_products_service(sellerId, client):
+def get_seller_products_service(sellerId):
         try:
             pipeline = [
                 {
@@ -293,7 +289,7 @@ def get_seller_products_service(sellerId, client):
 
 
 
-def update_no_of_clicks(client, product_id, no_of_clicks):
+def update_no_of_clicks( product_id, no_of_clicks):
     try:
         # Convert product_id to ObjectId
         product_id = ObjectId(product_id)
@@ -320,7 +316,7 @@ def update_no_of_clicks(client, product_id, no_of_clicks):
     else:
         return {"message": "Product not found."}
 
-def get_clicks_products_service(client):
+def get_clicks_products_service():
         try:
             pipeline = [
                 {

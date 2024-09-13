@@ -1,0 +1,135 @@
+[
+    {
+      "user_details": {
+        "fname": "Rahul",
+        "lname": "Patel",
+        "recovery_mail": "rahulpatel123@gmail.com",
+        "phn_no": "+91 9876543210"
+      },
+      "profile_pic": ["https://picsum.photos/200/300?random=1", "https://picsum.photos/200/300?random=2", "https://picsum.photos/200/300?random=3"],
+      "email": "rahulpatel@example.com",
+      "password": "Rahul123!",
+      "store_name": "Rahul's Fashion",
+      "store_slug": "rahuls_fashion",
+      "address": "B-101, Shreeji Apartments, Ahmedabad, Gujarat, 380006",
+      "city": "Ahmedabad",
+      "state": "Gujarat",
+      "pincode": "380006",
+      "gstin_no": "29123456789001",
+      "gmap": {
+        "longitudes": 72.5803,
+        "latitudes": 23.0225
+      },
+      "is_verified": false,
+      "images": ["https://picsum.photos/500/300?random=1", "https://picsum.photos/500/300?random=2", "https://picsum.photos/500/300?random=3"],
+      "feedback": [
+        {
+          "owner": "66e487eecd95f03797f9c214",
+          "comment": "Excellent service! Highly recommended.",
+          "rating": 4.8
+        }
+      ],
+      "created_at": "2023-09-13 12:34:56",
+      "last_updated": "2023-09-13 12:35:30"
+    },
+    {
+      "user_details": {
+        "fname": "Kiran",
+        "lname": "Sharma",
+        "recovery_mail": "kiransharma456@gmail.com",
+        "phn_no": "+91 1112223333"
+      },
+      "profile_pic": ["https://picsum.photos/200/300?random=4", "https://picsum.photos/200/300?random=5", "https://picsum.photos/200/300?random=6"],
+      "email": "kiransharma@example.com",
+      "password": "Kiran123!",
+      "store_name": "Kiran's Kitchen",
+      "store_slug": "kirans_kitchen",
+      "address": "Flat No. 302, Silver Oak Apartments, Pune, Maharashtra, 411001",
+      "city": "Pune",
+      "state": "Maharashtra",
+      "pincode": "411001",
+      "gstin_no": "29213456789002",
+      "gmap": {
+        "longitudes": 73.8567,
+        "latitudes": 18.5204
+      },
+      "is_verified": true,
+      "images": ["https://picsum.photos/500/300?random=4", "https://picsum/photos/500/300?random=5", "https://picsum.photos/500/300?random=6"],
+      "feedback": [
+        {
+          "owner": 67890,
+          "comment": "Great food quality and presentation!",
+          "rating": 4.9
+        }
+      ],
+      "created_at": "2023-09-13 11:15:30",
+      "last_updated": "2023-09-13 11:16:45"
+    },
+    {
+      "user_details": {
+        "fname": "Vikas",
+        "lname": "Gupta",
+        "recovery_mail": "vikasgupta789@gmail.com",
+        "phn_no": "+91 4445556666"
+      },
+      "profile_pic": ["https://picsum.photos/200/300?random=7", "https://picsum.photos/200/300?random=8", "https://picsum.photos/200/300?random=9"],
+      "email": "vikasgupta@example.com",
+      "password": "Vikas123!",
+      "store_name": "Vikas' Vintage",
+      "store_slug": "vikas_vintage",
+      "address": "Shop No. 104, Heritage Lane, Jaipur, Rajasthan, 302001",
+      "city": "Jaipur",
+      "state": "Rajasthan",
+      "pincode": "302001",
+      "gstin_no": "29324566789003",
+      "gmap": {
+        "longitudes": 75.7873,
+        "latitudes": 26.9137
+      },
+      "is_verified": false,
+      "images": ["https://picsum.photos/500/300?random=7", "https://picsum.photos/500/300?random=8", "https://picsum.photos/500/300?random=9"],
+      "feedback": [
+        {
+          "owner": 13579,
+          "comment": "Beautiful vintage items! Great customer service.",
+          "rating": 4.7
+        }
+      ],
+      "created_at": "2023-09-13 13:05:15",
+      "last_updated": "2023-09-13 13:06:22"
+    },
+    {
+      "user_details": {
+        "fname": "Amit",
+        "lname": "Jain",
+        "recovery_mail": "amitjain012@gmail.com",
+        "phn_no": "+91 7778889999"
+      },
+      "profile_pic": ["https://picsum.photos/200/300?random=10", "https://picsum/photos/200/300?random=11", "https://picsum.photos/200/300?random=12"],
+      "email": "amitjain@example.com",
+      "password": "Amit123!",
+      "store_name": "Amit's Accessories",
+      "store_slug": "amits-accessories_43210",
+      "address": "Office No. 203, Corporate Tower, Gurgaon, Haryana, 122002",
+      "city": "Gurgaon",
+      "state": "Haryana",
+      "pincode": "122002",
+      "gstin_no": "29435677889004",
+      "gmap": {
+        "longitudes": 76.9397,
+        "latitudes": 28.4591
+      },
+      "is_verified": true,
+      "images": ["https://picsum.photos/500/300?random=10", "https://picsum.photos/500/300?random=11", "https://picsum.photos/500/300?random=12"],
+      "feedback": [
+        {
+          "owner": 24680,
+          "comment": "Quick delivery and good quality accessories!",
+          "rating": 4.6
+        }
+      ],
+      "created_at": "2023-09-13 12:20:45",
+      "last_updated": "2023-09-13 12:21:52"
+    }
+]
+  

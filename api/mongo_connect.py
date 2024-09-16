@@ -11,8 +11,8 @@ DB = None
 try:
     client.admin.command('ping')
     print("Pinged your deployment. You successfully connected to MongoDB!")
+    DB = client.get_default_database(db_name)
+    print("Connected to the Dagina database!")
+    
 except Exception as e:
     print(f"An error occured while connecting \n{e}")
-
-DB = client.get_default_database(db_name)
-print("Connected to the Dagina database!")

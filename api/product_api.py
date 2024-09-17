@@ -3,8 +3,6 @@ from .product_service import get_products_service,get_categories_products_servic
 
 from flask import jsonify
 
-
-
 product_route = Blueprint('product_route', __name__)
 
 #getting general products

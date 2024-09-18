@@ -3,6 +3,7 @@ import jwt
 import datetime
 from dotenv import dotenv_values
 from .mongo_connect import DB
+from bson import ObjectId
 
 buyer_collection = DB["Buyer"]
 config = dotenv_values(".env")
@@ -73,6 +74,8 @@ def buyer_update_service(data, auth):
         for key in data:
             if key not in keys:
                 return {"status": "Invalid Key, Please update only valid keys"}
+        if "password" in data:
+            data['password'] = encrypt_password(data['password'])
         result = buyer_collection.update_one(filters, {"$set" : data})
         if result.matched_count == 0:
             return {"status": "No user matched with this email"}
@@ -103,11 +106,40 @@ def buyer_details_service(email):
     except Exception as e:
         return {"status": str(e)}
     
-def buyer_wishlist_service(data):
-    pass
+def buyer_wishlist_service(email):
+    try:
+        result = buyer_collection.find_one({"email":email},{"wishlist":1})
+        if not result:
+            return {"status": f"{email} doesn't exists"}
+        del result['_id']
+        return {"status": result['wishlist']}
+    except Exception as e:
+        return {"status": str(e)}
 
-def buyer_wishlist_add_service(data, prod_id):
-    pass
-
-def buyer_wishlist_rem_service(data, prod_id):
-    pass
+def buyer_wishlist_add_service(prod_id, auth):
+    try:
+        email = auth['email']
+        arr = buyer_collection.update_one({"email":email}, 
+                                          {'$addToSet': {
+                                              'wishlist': ObjectId(prod_id)
+                                          }})
+        if arr.matched_count == 0:
+            return {"status": f"{email} doesn't exists"}
+        else:
+            return {"status": f"{prod_id} added to wishlist"}
+    except Exception as e:
+        return {"status": str(e)}
+    
+def buyer_wishlist_rem_service(prod_id, auth):
+    try:
+        email = auth['email']
+        arr = buyer_collection.update_one({"email":email}, 
+                                          {'$pull': {
+                                              'wishlist': ObjectId(prod_id)
+                                          }})
+        if arr.matched_count == 0:
+            return {"status": f"{email} doesn't exists"}
+        else:
+            return {"status": f"{prod_id} removed from wishlist"}
+    except Exception as e:
+        return {"status": str(e)}

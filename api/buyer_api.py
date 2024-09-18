@@ -71,17 +71,37 @@ def buyer_details(email):
     except Exception as e:
         return {"status" : str(e)}
 
-@buyer_route.route("/buyer/wishlist/display", methods=['GET'])
-def buyer_wishlist():
-    data = request.json()
-    return buyer_wishlist_service(data)
+@buyer_route.route("/buyer/wishlist/<string:email>", methods=['GET'])
+def buyer_wishlist(email):
+    try:
+        return buyer_wishlist_service(email)
+    except Exception as e:
+        return {"status": str(e)}
 
-@buyer_route.route("/buyer/wishlist/add/<int:prod_id>", methods=['PUT'])
+@buyer_route.route("/buyer/wishlist/add/<string:prod_id>", methods=['PUT'])
 def buyer_wishlist_add(prod_id):
-    data = request.json()
-    return buyer_wishlist_add_service(data, prod_id)
+    try:
+        tok = request.headers.get('token')
+        if tok is None:
+            return {"status": "Please provide auth token"}
+        auth, msg = decode_token(tok)
+        if auth == None:
+            return msg
+        else:
+            return buyer_wishlist_add_service(prod_id, auth)
+    except Exception as e:
+        return {"status": str(e)}
 
-@buyer_route.route("/buyer/wishlist/remove/<int:prod_id>", methods=['PUT'])
+@buyer_route.route("/buyer/wishlist/remove/<string:prod_id>", methods=['PUT'])
 def buyer_wishlist_remove(prod_id):
-    data = request.json()
-    return buyer_wishlist_rem_service(data, prod_id)
+    try:
+        tok = request.headers.get('token')
+        if tok is None:
+            return {"status": "Please provide auth token"}
+        auth, msg = decode_token(tok)
+        if auth == None:
+            return msg
+        else:
+            return buyer_wishlist_rem_service(prod_id, auth)
+    except Exception as e:
+        return {"status": str(e)}

@@ -1,374 +1,189 @@
-from .mongo_connect import DB as client
-from pymongo import MongoClient
+from datetime import datetime
+from .mongo_connect import DB
+from bson.objectid import ObjectId
+from pymongo import ASCENDING, DESCENDING
+import json
 from flask import jsonify
-from dotenv import dotenv_values
-import random
+# Get the products collection from the database
+products_collection = DB.Products
+categories_collection = DB.Categories
+seller_collection = DB.Sellers
+buyer_collection = DB.Buyers
+
 from bson import ObjectId
 
-
-def serialize_document(doc):
-    """
-    Convert ObjectId fields in a document to string.
-    """
-    if isinstance(doc, dict):
-        return {key: serialize_document(value) for key, value in doc.items()}
-    elif isinstance(doc, list):
-        return [serialize_document(element) for element in doc]
-    elif isinstance(doc, ObjectId):
-        return str(doc)
-    else:
-        return doc
-
-def get_products_service():
+def get_products_service(query_params):
     try:
-        pipeline = [
-            {
-                '$lookup': {
-                    'from': 'Product',  # Ensure the collection name is correct
-                    'localField': 'productId',
-                    'foreignField': '_id',
-                    'as': 'productDetails'
-                }
-            },
-            {
-                '$unwind': {
-                    'path': '$productDetails'
-                }
-            },
-            {
-                '$sample': {
-                    'size': 20  # Sample size, adjust as needed
-                }
-            },
-            {
-                '$limit': 20  # Limit the number of documents returned
-            }
-        ]
-        # Execute the aggregation pipeline
-        result = client["Premium"].aggregate(pipeline)
-        # Convert the cursor to a list and return the data
-        premium_products_with_details = list(result)
-        premium_products_with_details = [serialize_document(doc) for doc in premium_products_with_details]
-        random.shuffle(premium_products_with_details)
+        # Base query to filter products
+        exclude_fields = ["page", "sort", "limit", "fields"]
+        query_obj = {k: v for k, v in query_params.items() if k not in exclude_fields}
+        
+                # Handle comparison operators manually
+        query = {}
+        for key, value in query_obj.items():
+            if '__gte' in key:
+                query[key.replace('__gte', '')] = {'$gte': float(value)}
+            elif '__gt' in key:
+                query[key.replace('__gt', '')] = {'$gt': float(value)}
+            elif '__lte' in key:
+                query[key.replace('__lte', '')] = {'$lte': float(value)}
+            elif '__lt' in key:
+                query[key.replace('__lt', '')] = {'$lt': float(value)}
+            else:
+                query[key] = value  # Normal fields
 
-        premium_count = len(premium_products_with_details)
-        max_regular_products = 100 - premium_count
+        print(f"MongoDB Query: {query}")  # Debugging
 
-        # Fetch regular products from Product collection
-        pipeline_random = [
-            {
-                '$sample': {
-                    'size': max_regular_products  # Sample size of regular products, adjust as needed
-                }
-            }
-        ]
-        regular_result = client['Product'].aggregate(pipeline_random)
-        regular_products_list = list(regular_result)
-        regular_products_list = [serialize_document(doc) for doc in regular_products_list]
+        # Initialize the MongoDB query
+        mongo_query = products_collection.find(query)
 
-        # Shuffle regular products list
-        random.shuffle(regular_products_list)
-        if len(regular_products_list) > 0:
-            return {
-                "status": "success",
-                "regular_products_list": regular_products_list,
-                "premium_products_list": premium_products_with_details
-            }
-        return {
-            "status": "fail",
-            "message": "An error has occurred. Please try again!"
-        }
+        # Sorting
+        sort_by = query_params.get('sort')
+        if sort_by:
+            sort_criteria = [(field.strip(), ASCENDING if not field.startswith('-') else DESCENDING)
+                             for field in sort_by.split(',')]
+            mongo_query = mongo_query.sort(sort_criteria)
+        else:
+            mongo_query = mongo_query.sort([("createdAt", DESCENDING)])  # Default sorting by creation date
+
+        # Field limiting
+        fields = query_params.get('fields')
+        if fields:
+            field_projection = {field: 1 for field in fields.split(',')}
+            print(f"Field Projection: {field_projection}")  # Debugging
+            mongo_query = mongo_query.project(field_projection)  # Use correct method
+
+        # Pagination
+        page = int(query_params.get('page', 1))
+        limit = int(query_params.get('limit', 10))
+        skip = (page - 1) * limit
+        mongo_query = mongo_query.skip(skip).limit(limit)
+
+        # Check if the requested page exists
+        if 'page' in query_params:
+            product_count = products_collection.count_documents({})
+            if skip >= product_count:
+                return jsonify({"error": "This page does not exist"}), 400
+
+        # Fetch products
+        products = list(mongo_query)
+        # Convert ObjectId fields to strings
+        for product in products:
+            product['_id'] = str(product['_id'])
+            if 'seller_id' in product:
+                product['seller_id'] = str(product['seller_id'])
+            if 'type_categories' in product:
+                product['type_categories'] = [str(cat) for cat in product['type_categories']]
+            if 'reviews' in product:
+                for review in product['reviews']:
+                    # Convert 'ratedby' field to ObjectId if it exists
+                    if 'ratedby' in review:
+                        review['ratedby'] = str(review['ratedby'])
+
+        return products
+
     except Exception as e:
-        return {
-            "status": "error",
-            "message": str(e)
-        }
+        raise Exception(f"Error fetching products: {str(e)}")
 
-
-
-
-def get_categories_products_service(category):
-        try:
-            pipeline = [
-                {
-                    '$lookup': {
-                        'from': 'Product',  # Ensure the collection name is correct
-                        'localField': 'productId',
-                        'foreignField': '_id',
-                        'as': 'productDetails'
-                    }
-                },
-                {
-                    '$unwind': {
-                        'path': '$productDetails'
-                    }
-                },
-                {
-                    '$match': {
-                        'productDetails.category': category  # Filter by category
-                    }
-                },
-                {
-                    '$sample': {
-                        'size': 20  # Sample size, adjust as needed
-                    }
-                },
-                {
-                    '$limit': 20  # Limit the number of documents returned
-                }
-            ]
-            # Execute the aggregation pipeline
-            result = client["Premium"].aggregate(pipeline) 
-            # Convert the cursor to a list and return the data
-            premium_products_with_details = list(result)
-            random.shuffle(premium_products_with_details)
-            premium_products_with_details = [serialize_document(doc) for doc in premium_products_with_details]
-
-            premium_count = len(premium_products_with_details)
-            max_regular_products = 100 - premium_count
-            
-            # Fetch regular products from Product collection
-            pipeline_random = [
-                {
-                    '$match': {
-                        'category': category  # Filter by category
-                    }
-                },
-                {
-                    '$sample': {
-                        'size': max_regular_products  # Sample size of regular products, adjust as needed
-                    }
-                }
-            ]
-            regular_result = client['Product'].aggregate(pipeline_random)
-            regular_products_list = list(regular_result)
-            regular_products_list = [serialize_document(doc) for doc in regular_products_list]
-            # Shuffle regular products list
-            random.shuffle(regular_products_list)
-            
-            if len(regular_products_list)>0:
-                return {"status": "success","categories_products_list":regular_products_list,"categories_premium_products_list":premium_products_with_details }
-            return {"status": "fail", "message": "Category Not Found !! An error has occured. Please try again!"}
-        except Exception as e:
-            return {"status": "error", "message": str(e)}
-
-
-def get_price_range_products_service(pricerange):
-        try:
-            pipeline = [
-                {
-                    '$lookup': {
-                        'from': 'Product',  # Ensure the collection name is correct
-                        'localField': 'productId',
-                        'foreignField': '_id',
-                        'as': 'productDetails'
-                    }
-                },
-                {
-                    '$unwind': {
-                        'path': '$productDetails'
-                    }
-                },
-                {
-                    '$match': {
-                        'productDetails.price range': pricerange  # Filter by range
-                    }
-                },
-                {
-                    '$sample': {
-                        'size': 20  # Sample size, adjust as needed
-                    }
-                },
-                {
-                    '$limit': 20  # Limit the number of documents returned
-                }
-            ]
-            # Execute the aggregation pipeline
-            result = client["Premium"].aggregate(pipeline) 
-            # Convert the cursor to a list and return the data
-            premium_products_with_details = list(result)
-            premium_products_with_details = [serialize_document(doc) for doc in premium_products_with_details]
-            random.shuffle(premium_products_with_details)
-
-            premium_count = len(premium_products_with_details)
-            max_regular_products = 100 - premium_count
-            
-            # Fetch regular products from Product collection
-            pipeline_random = [
-                {
-                    '$match': {
-                        'price range': pricerange  # Filter by price range
-                    }
-                },
-                {
-                    '$sample': {
-                        'size': max_regular_products  # Sample size of regular products, adjust as needed
-                    }
-                }
-            ]
-            regular_result = client['Product'].aggregate(pipeline_random)
-            regular_products_list = list(regular_result)
-            regular_products_list = [serialize_document(doc) for doc in regular_products_list]
-            # Shuffle regular products list
-            random.shuffle(regular_products_list)
-            
-            if len(regular_products_list)>0:
-                return {"status": "success","categories_products_list":regular_products_list,"categories_premium_products_list":premium_products_with_details }
-            return {"status": "fail", "message": "An error has occured. Please try again!"}
-        except Exception as e:
-            return {"status": "error", "message": str(e)}
-
-
-def get_seller_products_service(sellerId):
-        try:
-            pipeline = [
-                {
-                    '$lookup': {
-                        'from': 'Product',  # Ensure the collection name is correct
-                        'localField': 'productId',
-                        'foreignField': '_id',
-                        'as': 'productDetails'
-                    }
-                },
-                {
-                    '$unwind': {
-                        'path': '$productDetails'
-                    }
-                },
-                {
-                    '$match': {
-                        'productDetails.seller Id': sellerId  # Filter by range
-                    }
-                },
-                {
-                    '$sample': {
-                        'size': 20  # Sample size, adjust as needed
-                    }
-                },
-                {
-                    '$limit': 20  # Limit the number of documents returned
-                }
-            ]
-            # Execute the aggregation pipeline
-            result = client["Premium"].aggregate(pipeline) 
-            # Convert the cursor to a list and return the data
-            premium_products_with_details = list(result)
-            premium_products_with_details = [serialize_document(doc) for doc in premium_products_with_details]
-            random.shuffle(premium_products_with_details)
-
-            premium_count = len(premium_products_with_details)
-            max_regular_products = 100 - premium_count
-            
-            # Fetch regular products from Product collection
-            pipeline_random = [
-                {
-                    '$match': {
-                        'seller Id': sellerId  # Filter by price range
-                    }
-                },
-                {
-                    '$sample': {
-                        'size': max_regular_products  # Sample size of regular products, adjust as needed
-                    }
-                }
-            ]
-            regular_result = client['Product'].aggregate(pipeline_random)
-            regular_products_list = list(regular_result)
-            regular_products_list = [serialize_document(doc) for doc in regular_products_list]
-            # Shuffle regular products list
-            random.shuffle(regular_products_list)
-            
-            if len(regular_products_list)>0:
-                return {"status": "success","seller_products_list":regular_products_list,"seller_premium_products_list":premium_products_with_details }
-            return {"status": "fail", "message": "An error has occured. Please try again!"}
-        except Exception as e:
-            return {"status": "error", "message": str(e)}
-
-
-
-
-
-
-def update_no_of_clicks( product_id, no_of_clicks):
+# Service to get a product by its ID
+def get_product_by_id_service(product_id):
     try:
-        # Convert product_id to ObjectId
-        product_id = ObjectId(product_id)
+        product = products_collection.find_one({"_id": ObjectId(product_id)})  # Find product by ID
+        if product:
+            product['_id'] = str(product['_id'])  # Convert ObjectId to string
+            seller = seller_collection.find_one({"_id": ObjectId(product['seller_id'])})
+            if seller:
+                product['seller'] = {
+                    '_id': str(seller['_id']),
+                    'name': seller.get('name'),  # Include necessary seller details
+                    'email': seller.get('email'),
+                }
+            else:
+                product['seller'] = None
+            # Remove 'seller_id' after populating
+            product.pop('seller_id', None)
+            categories = categories_collection.find({"_id": {"$in": [ObjectId(cat_id) for cat_id in product['type_categories']]}})
+            product['categories'] = [{'id': str(cat['_id']), 'title': cat.get('title'),'description':cat.get("description")} for cat in categories]
+            product.pop('type_categories', None)
+            if 'reviews' in product:
+                for review in product['reviews']:
+                    # Convert 'ratedby' field to ObjectId if it exists
+                    if 'ratedby' in review:
+                        review['ratedby'] = str(review['ratedby'])
+
+
+            return product
+        else:
+            return None
     except Exception as e:
-        return {"error": "Invalid product_id format"}
-    
-    # Define the query to find the product by product_id
-    query = {'_id': product_id}
-    
-    # Define the update to increment the noOfClicks
-    update = {
-        '$inc': {
-            'noOfClicks': int(no_of_clicks)
-        }
-    }
-    
-    # Perform the update
-    result = client['Product'].update_one(query, update)
-    print(result)
-    
-    # Check if the update was successful
-    if result:
-        return {"message": "Product updated successfully."}
-    else:
-        return {"message": "Product not found."}
+        raise Exception(f"Error fetching product by ID: {str(e)}")
 
-def get_clicks_products_service():
-        try:
-            pipeline = [
-                {
-                    '$lookup': {
-                        'from': 'Product',  # Ensure the collection name is correct
-                        'localField': 'productId',
-                        'foreignField': '_id',
-                        'as': 'productDetails'
-                    }
-                },
-                {
-                    '$unwind': {
-                        'path': '$productDetails'
-                    }
-                },
-                {
-                '$sort': {
-                    'productDetails.noOfClicks': -1  # Sort by 'noOfClicks' in descending order
-                }
-                },
-                {
-                    '$limit': 20  # Limit the number of documents returned
-                }
-            ]
-            # Execute the aggregation pipeline
-            result = client["Premium"].aggregate(pipeline) 
-            # Convert the cursor to a list and return the data
-            premium_products_with_details = list(result)
-            premium_products_with_details = [serialize_document(doc) for doc in premium_products_with_details]
+# Service to create a new product
+def create_product_service(data):
+    try:
+        data['created_at'] = datetime.utcnow()  # Add creation timestamp
+        # Ensure that ObjectId fields are converted to the appropriate format
+        if 'type_categories' in data:
+            data['type_categories'] = [ObjectId(cat) for cat in data['type_categories']]  # Convert category IDs to ObjectId
+        if 'seller_id' in data:
+            data['seller_id'] = ObjectId(data['seller_id'])  # Convert seller_id to ObjectId
+        if 'reviews' in data:
+            # Iterate through each review
+            for review in data['reviews']:
+                # Convert 'ratedby' field to ObjectId if it exists
+                if 'ratedby' in review:
+                    review['ratedby'] = ObjectId(review['ratedby'])
 
-            premium_count = len(premium_products_with_details)
-            max_regular_products = 100 - premium_count
-            
-            # Fetch regular products from Product collection
-            pipeline_random = [
-                                {
-                                    '$sort': {
-                                        'noOfClicks': -1
-                                    }
-                                }, {
-                                    '$limit': max_regular_products
-                                }
-                            ]
-            regular_result = client['Product'].aggregate(pipeline_random)
-            regular_products_list = list(regular_result)
-            regular_products_list = [serialize_document(doc) for doc in regular_products_list]
-            
-            if len(regular_products_list)>0:
-                return {"status": "success","click_sorted_products_list":regular_products_list,"click_sorted_premium_products_list":premium_products_with_details }
-            return {"status": "fail", "message": "An error has occured. Please try again!"}
-        except Exception as e:
-            return {"status": "error", "message": str(e)}  
+        result = products_collection.insert_one(data)  # Insert new product
+        new_product = products_collection.find_one({"_id": result.inserted_id})
+        new_product['_id'] = str(new_product['_id'])  # Convert ObjectId to string
+        new_product['seller_id'] = str(new_product['seller_id'])  # Convert seller_id ObjectId to string
+        new_product['type_categories'] = [str(cat) for cat in new_product['type_categories']]  # Convert categories ObjectId to string
+        if 'reviews' in new_product:
+            for review in new_product['reviews']:
+                # Convert 'ratedby' field to ObjectId if it exists
+                if 'ratedby' in review:
+                    review['ratedby'] = str(review['ratedby'])
 
+        return new_product
+    except Exception as e:
+        raise Exception(f"Error creating product: {str(e)}")
 
- 
+# Service to update an existing product
+def update_product_service(product_id, data):
+    try:
+        if 'type_categories' in data:
+            data['type_categories'] = [ObjectId(cat) for cat in data['type_categories']]  # Convert category IDs to ObjectId
+        if 'reviews' in data:
+            data['reviews'] = [ObjectId(review) for review in data['reviews']]
+        if 'seller_id' in data:
+            data['seller_id'] = ObjectId(data['seller_id'])  # Convert seller_id to ObjectId
+        data['updated_at'] = datetime.utcnow()  # Add update timestamp
+
+        result = products_collection.update_one({"_id": ObjectId(product_id)}, {"$set": data})  # Update the product
+        if result.modified_count > 0:
+            updated_product = products_collection.find_one({"_id": ObjectId(product_id)})
+            updated_product['_id'] = str(updated_product['_id'])  # Convert ObjectId to string
+            updated_product['seller_id'] = str(updated_product['seller_id'])  # Convert seller_id ObjectId to string
+            updated_product['type_categories'] = [str(cat) for cat in updated_product['type_categories']]  # Convert categories ObjectId to string
+        if 'reviews' in updated_product:
+            for review in updated_product['reviews']:
+                # Convert 'ratedby' field to ObjectId if it exists
+                if 'ratedby' in review:
+                    review['ratedby'] = str(review['ratedby'])            
+            return updated_product
+        else:
+            return None
+    except Exception as e:
+        raise Exception(f"Error updating product: {str(e)}")
+
+# Service to delete a product by its ID
+def delete_product_service(product_id):
+    try:
+        result = products_collection.delete_one({"_id": ObjectId(product_id)})  # Delete product by ID
+        if result.deleted_count > 0:
+            return True
+        else:
+            return False
+    except Exception as e:
+        raise Exception(f"Error deleting product: {str(e)}")

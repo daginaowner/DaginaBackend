@@ -1,86 +1,71 @@
-from flask import Blueprint, request
-from .product_service import get_products_service,get_categories_products_service,get_price_range_products_service,update_no_of_clicks,get_seller_products_service,get_clicks_products_service
+from flask import Blueprint, request, jsonify
+from .product_service import get_products_service, get_product_by_id_service, create_product_service, delete_product_service, update_product_service
 
-from flask import jsonify
-
+# Create a blueprint for product routes
 product_route = Blueprint('product_route', __name__)
 
-#getting general products
-@product_route.route("/api/products", methods=['GET'])
+@product_route.route('/products', methods=['GET'])
 def get_products():
     try:
-        response = get_products_service()
-        return jsonify(response)
-    
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
- 
-
-#getting products based on category
-@product_route.route("/api/products/category/<string:category>", methods=['GET'])
-def get_categories_products(category):
-    try:
-    
-        response =  get_categories_products_service(category)
-        return jsonify(response)
-    
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
-    
-#getting products based on price range
-@product_route.route("/api/products/pricerange/<string:pricerange>", methods=['GET'])
-def get_price_range_products(pricerange):
-    try:
-        response =  get_price_range_products_service(pricerange)
-        return jsonify(response)
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
-
-#getting products based on seller Id
-@product_route.route("/api/products/sellerId/<string:sellerId>", methods=['GET'])
-def get_seller_products(sellerId):
-    try : 
-        response =  get_seller_products_service(sellerId)
-        return jsonify(response)
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
-    
-    
-
-#getting producst based on highest no of clicks
-@product_route.route("/api/products/clicks", methods=['GET'])
-def get_clicks_products():
-    try:
-    # data = request.get_json()
-        response =  get_clicks_products_service()
-        return jsonify(response)
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
-
-# #getting single product details
-# @product_route.route("/api/products/<string:productId>", methods=['GET'])
-# def get_price_range_products(productId):
-#     return get_product_details_service(productId,DB)
-
-# #finding products details based on search field
-# @product_route.route("/api/products/<string:searchInput>", methods=['GET'])
-# def get_price_range_products(searchInput):
-#     return get_searched_products_service(searchInput,DB)
-
-@product_route.route('/api/products/update_clicks', methods=['POST'])
-def update_clicks():
-    try:
-
-        data = request.get_json()
-        product_id = data.get('productId')
-        no_of_clicks = data.get('noOfClicks')
-        if not product_id or not no_of_clicks:
-          return jsonify({"error": "productId and noOfClicks are required"}), 400
-
-
+        # Extract query parameters from the request (for filtering, sorting, pagination, etc.)
+        query_params = request.args.to_dict()  # Convert query parameters to a dictionary
         
-        response = update_no_of_clicks( product_id, no_of_clicks)
-        return jsonify(response)
-    
+        # Call the service function and pass the query parameters
+        products = get_products_service(query_params)
+
+        return jsonify(products), 200
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        return jsonify({'error': str(e)}), 500
+
+# Route to get individual product details by ID
+@product_route.route('/products/<product_id>', methods=['GET'])
+def get_product_by_id(product_id):
+    try:
+        product = get_product_by_id_service(product_id)  # Call service to fetch product by ID
+        if product:
+            return jsonify(product), 200
+        else:
+            return jsonify({'error': 'Product not found'}), 404
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+# Route to create a new product
+@product_route.route('/products', methods=['POST'])
+def create_product():
+    try:
+        data = request.get_json()  # Get JSON data from request
+        # Check required fields
+        required_fields = ['product_name', 'description', 'price', 'type_jewellery', 'seller_id']
+        if not all(field in data for field in required_fields):
+            return jsonify({'error': 'Missing required fields'}), 400
+        
+        # Call service to create a new product
+        product = create_product_service(data)
+        return jsonify(product), 201
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+# Route to update an existing product
+@product_route.route('/products/<product_id>', methods=['PUT'])
+def update_product(product_id):
+    try:
+        data = request.get_json()  # Get JSON data from request
+        updated_product = update_product_service(product_id, data)  # Call service to update product
+        if updated_product:
+            return jsonify(updated_product), 200
+        else:
+            return jsonify({'error': 'Product not found'}), 404
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+# Route to delete a product
+@product_route.route('/products/<product_id>', methods=['DELETE'])
+def delete_product(product_id):
+    try:
+        deleted = delete_product_service(product_id)  # Call service to delete product
+        if deleted:
+            return jsonify({'message': 'Product deleted'}), 200
+        else:
+            return jsonify({'error': 'Product not found'}), 404
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500

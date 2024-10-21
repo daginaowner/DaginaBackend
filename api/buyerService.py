@@ -4,6 +4,7 @@ import datetime
 from dotenv import dotenv_values
 from .mongo_connect import DB
 from bson import ObjectId
+from .generateResp import generateJsonResponse
 
 buyer_collection = DB["Buyer"]
 config = dotenv_values(".env")
@@ -26,7 +27,8 @@ def buyer_login_service(data):
         db_obj = buyer_collection.find_one({"email": email}, 
             {"_id":1, "email": 1, "password":1})
         if db_obj == None:
-            return {"status": "Account with this email doesn't exist. Please create an account first!"}
+            return generateJsonResponse(success=False, status=401, message="Account with this email doesn't exist. Please create an account first!")
+            #return {"status": "Account with this email doesn't exist. Please create an account first!"}
         usr_passwd = data['password']
         auth = compare_passwords(usr_passwd, db_obj["password"])
         if auth:
@@ -36,17 +38,20 @@ def buyer_login_service(data):
                 'exp': datetime.datetime.now(datetime.UTC) + datetime.timedelta(minutes=100)
             }
             token = generate_token(payload)
-            return {"status": token}
+            return generateJsonResponse(success=True, status=200, message="User login successful", data={'token': token})
+            #return {"status": token}
         else:
-            return {"status": "Please enter correct password"}
+            return generateJsonResponse(success=False, status=401, message="Please enter correct password")
+            #return {"status": "Please enter correct password"}
     except Exception as e:
-        return {"status": str(e)}
+        generateJsonResponse(success=True, status=200, message=str(e))
 
 def buyer_signup_service(data):
     try:
         email = data["email"]
         if buyer_collection.find_one(filter={"email":email}):
-            return {"status": "This email already exists"}
+            return generateJsonResponse(success=False, status=401, message="This email already exists")
+            #return {"status": "This email already exists"}
         resp = buyer_collection.insert_one({
             "email": email,
             "fname": data["fname"],
@@ -61,10 +66,13 @@ def buyer_signup_service(data):
             "orders": [],
         })
         if resp.inserted_id:
-            return {"status": "User added as Buyer"}
-        return {"status": "An error occured"}
+            return generateJsonResponse(success=True, status=201, message="User added as a Buyer")
+            #return {"status": "User added as Buyer"}
+        return generateJsonResponse(success=False, status=400, message="An error occured!")
+        #return {"status": "An error occured"}
     except Exception as e:
-        return {"status": str(e)}
+        return generateJsonResponse(success=False, status=400, message=str(e))
+        #return {"status": str(e)}
 
 def buyer_update_service(data, auth):
     try:
@@ -73,48 +81,60 @@ def buyer_update_service(data, auth):
         keys = ["fname","lname","phn_no","password","address","city","state","pincode","wishlist","orders"]
         for key in data:
             if key not in keys:
-                return {"status": "Invalid Key, Please update only valid keys"}
+                return generateJsonResponse(success=False, status=401, message="Invalid Key, Please update only valid keys")
+                #return {"status": "Invalid Key, Please update only valid keys"}
         if "password" in data:
             data['password'] = encrypt_password(data['password'])
         result = buyer_collection.update_one(filters, {"$set" : data})
         if result.matched_count == 0:
-            return {"status": "No user matched with this email"}
+            return generateJsonResponse(success=False, status=401, message="No user matched with this email")
+            #return {"status": "No user matched with this email"}
         else:
-            return {"status": f"{email} user modified. New id is {result.upserted_id}"}
+            return generateJsonResponse(success=True, status=200, message=f"{email} User modified", data={'new_id': {result.upserted_id}})
+            #return {"status": f"{email} user modified. New id is {result.upserted_id}"}
     except Exception as e:
-        return {"status": str(e)}
+        return generateJsonResponse(success=False, status=400, message=str(e))
+        #return {"status": str(e)}
 
 def buyer_delete_service(auth):
     try:
         email = auth['email']
         result = buyer_collection.delete_one(filter={"email":email})
         if result.deleted_count == 1:
-            return {"status": f"{email} user deleted"}
+            return generateJsonResponse(success=True, status=200, message=f"{email} user deleted")
+            #return {"status": f"{email} user deleted"}
         elif result.deleted_count == 0:
-            return {"stauts": f"{email} doesn't exist or cannot be deleted"}
+            return generateJsonResponse(success=False, status=400, message=f"{email} doesn't exist or cannot be deleted")
+            #return {"stauts": f"{email} doesn't exist or cannot be deleted"}
     except Exception as e:
-        return {"status": str(e)}
-    pass
+        return generateJsonResponse(success=False, status=400, message=str(e))
+        #return {"status": str(e)}
 
 def buyer_details_service(email):
     try:
         result = buyer_collection.find_one({"email": email},{"password":0})
         if not result:
-            return {"status": f"{email} doesn't exists"}
+            return generateJsonResponse(success=False, status=400, message=f"{email} doesn't exists")
+            #return {"status": f"{email} doesn't exists"}
         result['_id'] = str(result['_id'])
-        return {"status": result}
+        return generateJsonResponse(success=True, status=200, message=f"{email} user found", data=result)
+        #return {"status": result}
     except Exception as e:
-        return {"status": str(e)}
+        return generateJsonResponse(success=False, status=400, message=str(e))
+        #return {"status": str(e)}
     
 def buyer_wishlist_service(email):
     try:
         result = buyer_collection.find_one({"email":email},{"wishlist":1})
         if not result:
-            return {"status": f"{email} doesn't exists"}
+            return generateJsonResponse(success=False, status=400, message=f"{email} doesn't exists")
+            #return {"status": f"{email} doesn't exists"}
         del result['_id']
-        return {"status": result['wishlist']}
+        return generateJsonResponse(success=True, status=200, message=f"{email} user's wishlist", data=result['wishlist'])
+        #return {"status": result['wishlist']}
     except Exception as e:
-        return {"status": str(e)}
+        return generateJsonResponse(success=False, status=400, message=str(e))
+        #return {"status": str(e)}
 
 def buyer_wishlist_add_service(prod_id, auth):
     try:

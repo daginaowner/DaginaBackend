@@ -4,6 +4,7 @@ from .mongo_connect import DB
 from flask import request
 from dotenv import dotenv_values
 import jwt
+from .generateResp import generateJsonResponse
 
 seller_route = Blueprint('seller_route', __name__)
 
@@ -25,7 +26,8 @@ def seller_signup():
         data = request.get_json()
         return seller_signup_service(data)
     except Exception as e:
-        return {"status": str(e)}
+        return generateJsonResponse(success=False, status=400, message=str(e))
+        #return {"status": str(e)}
 
 @seller_route.route("/seller/login", methods=['POST'])
 def seller_login():
@@ -33,7 +35,8 @@ def seller_login():
         data = request.get_json()
         return seller_login_service(data)
     except Exception as e:
-        return {"status": str(e)}
+        return generateJsonResponse(success=False, status=400, message=str(e))
+
 
 @seller_route.route("/seller/update", methods=['PUT'])
 def seller_update():
@@ -48,7 +51,7 @@ def seller_update():
             data = request.get_json()
             return seller_update_service(data, auth)
     except Exception as e:
-        return {"status": str(e)}
+        return generateJsonResponse(success=False, status=400, message=str(e))
 
 @seller_route.route("/seller/delete", methods = ['DELETE'])
 def seller_delete():
@@ -62,20 +65,20 @@ def seller_delete():
         else:
             return seller_delete_service(auth)
     except Exception as e:
-        return {"status": str(e)}
+        return generateJsonResponse(success=False, status=400, message=str(e))
 
 @seller_route.route("/seller/details/<string:seller_id>", methods=['GET'])
 def seller_details(seller_id):
     try:
         return seller_details_service(seller_id)
     except Exception as e:
-        return {"status" : str(e)}
+        return generateJsonResponse(success=False, status=400, message=str(e))
 
 @seller_route.route("/seller/feedbacks/<string:seller_id>", methods=['GET'])
 def seller_feedbacks(seller_id):
     try:
         return seller_feedback_service(seller_id)
     except Exception as e:
-        return {"status" : str(e)}
+        return generateJsonResponse(success=False, status=400, message=str(e))
 
 

@@ -6,6 +6,7 @@ from .mongo_connect import DB
 from bson import ObjectId
 import re
 import unicodedata
+from .generateResp import generateJsonResponse
 
 #Converts data into slug text
 def slugify(text):
@@ -42,7 +43,8 @@ def seller_login_service(data):
         db_obj = seller_collection.find_one({"email": email}, 
             {"_id":1, "email": 1, "password":1})
         if db_obj == None:
-            return {"status": "Account with this email doesn't exist. Please create an account first!"}
+            return generateJsonResponse(success=False, status=401, message="Account with this email doesn't exist. Please create an account first!")
+            #return {"status": "Account with this email doesn't exist. Please create an account first!"}
         usr_passwd = data['password']
         auth = compare_passwords(usr_passwd, db_obj["password"])
         if auth:
@@ -52,17 +54,21 @@ def seller_login_service(data):
                 'exp': datetime.datetime.now(datetime.UTC) + datetime.timedelta(minutes=100)
             }
             token = generate_token(payload)
-            return {"status": token}
+            return generateJsonResponse(success=True, status=200, message="Login successful", data={'token': token})
+            #return {"status": token}
         else:
-            return {"status": "Please enter correct password"}
+            return generateJsonResponse(success=False, status=401, message="Please enter correct password")
+            #return {"status": "Please enter correct password"}
     except Exception as e:
-        return {"status": str(e)}
+        return generateJsonResponse(success=False, status=400, message=str(e))
+        #return {"status": str(e)}
 
 def seller_signup_service(data):
     try:
         email = data["email"]
         if seller_collection.find_one(filter={"email":email}):
-            return {"status": "This email already exists"}
+            return generateJsonResponse(success=False, status=401, message="This email already exists")
+            #return {"status": "This email already exists"}
         resp = seller_collection.insert_one({
             "user_details":{
                 "fname": data["fname"],
@@ -91,10 +97,12 @@ def seller_signup_service(data):
             "last_updated": datetime.datetime.now(),
         })
         if resp.inserted_id:
-            return {"status": "User added as Seller"}
+            return generateJsonResponse(success=True, status=201, message="User added as seller")
+            #return {"status": "User added as Seller"}
         return {"status": "An error occured"}
     except Exception as e:
-        return {"status": str(e)}
+        return generateJsonResponse(success=False, status=400, message=str(e))
+        #return {"status": str(e)}
 
 def seller_update_service(data, auth):
     try:
@@ -105,41 +113,50 @@ def seller_update_service(data, auth):
                 "gmap.longitudes", "gmap.latitudes", "is_verified", "images"]
         for key in data:
             if key not in keys:
-                return {"status": "Invalid Key, Please update only valid keys"}
+                return generateJsonResponse(success=False, status=401, message="Invalid Key, Please update only valid keys")
+                #return {"status": "Invalid Key, Please update only valid keys"}
         if "store_name" in data:
             data["store_slug"] = slugify(data["store_name"])
         if "password" in data:
             data["password"] = encrypt_password(data["password"])
         result = seller_collection.update_one(filters, {"$set" : data})
         if result.matched_count == 0:
-            return {"status": "No user matched with this email"}
+            return generateJsonResponse(success=False, status=401, message="No user matched with this email")
+            #return {"status": "No user matched with this email"}
         else:
-            return {"status": f"{email} user modified. New id is {result.upserted_id}"}
+            return generateJsonResponse(success=True, status=200, message=f"{email} user modified.", data={'new_id': {result.upserted_id}})
+            #return {"status": f"{email} user modified. New id is {result.upserted_id}"}
     except Exception as e:
-        return {"status": str(e)}
+        return generateJsonResponse(success=False, status=400, message=str(e))
+        #return {"status": str(e)}
 
 def seller_delete_service(auth):
     try:
         email = auth['email']
         result = seller_collection.delete_one(filter={"email":email})
         if result.deleted_count == 1:
-            return {"status": f"{email} seller deleted"}
+            return generateJsonResponse(success=True, status=200, message=f"{email} seller deleted")
+            #return {"status": f"{email} seller deleted"}
         elif result.deleted_count == 0:
-            return {"stauts": f"{email} doesn't exist or cannot be deleted"}
+            return generateJsonResponse(success=False, status=400, message=f"{email} doesn't exist or cannot be deleted")
+            #return {"stauts": f"{email} doesn't exist or cannot be deleted"}
     except Exception as e:
-        return {"status": str(e)}
-    pass
+        return generateJsonResponse(success=False, status=400, message=str(e))
+        #return {"status": str(e)}
 
 #Returns every detail except feedback about sellers
 def seller_details_service(sel_id):
     try:
         result = seller_collection.find_one({"_id": ObjectId(sel_id)},{"password":0, "feedback":0})
         if not result:
-            return {"status": f"{sel_id} doesn't exists"}
+            return generateJsonResponse(success=False, status=400, message=f"{sel_id} doesn't exists")
+            #return {"status": f"{sel_id} doesn't exists"}
         result['_id'] = str(result['_id'])
-        return {"status": result}
+        return generateJsonResponse(success=True, status=200, message="", data={'data': result})
+        #return {"status": result}
     except Exception as e:
-        return {"status": str(e)}
+        return generateJsonResponse(success=False, status=400, message=str(e))
+        #return {"status": str(e)}
     
 def seller_feedback_service(sel_id):
     try:
@@ -184,14 +201,17 @@ def seller_feedback_service(sel_id):
             ]
         result = list(seller_collection.aggregate(pipeline))
         if len(result) == 0:
-            return {"status": f"{sel_id} Seller doesn't exists"}
+            return generateJsonResponse(success=False, status=400, message=f"{sel_id} Seller doesn't exists")
+            #return {"status": f"{sel_id} Seller doesn't exists"}
         arr = []
         for view in result:
             del view['_id']
             arr.append(view)
-        return {"status": arr}
+        return generateJsonResponse(success=True, status=200, message="", data={'feedbacks': arr})
+        #return {"status": arr}
     except Exception as e:
-        return {"status": str(e)}
+        return generateJsonResponse(success=False, status=400, message=str(e))
+        #return {"status": str(e)}
     
 
 

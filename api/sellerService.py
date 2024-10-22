@@ -124,7 +124,7 @@ def seller_update_service(data, auth):
             return generateJsonResponse(success=False, status=401, message="No user matched with this email")
             #return {"status": "No user matched with this email"}
         else:
-            return generateJsonResponse(success=True, status=200, message=f"{email} user modified.", data={'new_id': {result.upserted_id}})
+            return generateJsonResponse(success=True, status=200, message=f"{email} user modified.", data={'new_id': result.upserted_id})
             #return {"status": f"{email} user modified. New id is {result.upserted_id}"}
     except Exception as e:
         return generateJsonResponse(success=False, status=400, message=str(e))

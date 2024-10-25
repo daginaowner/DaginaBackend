@@ -31,6 +31,7 @@ def buyer_login_service(data):
             #return {"status": "Account with this email doesn't exist. Please create an account first!"}
         usr_passwd = data['password']
         auth = compare_passwords(usr_passwd, db_obj["password"])
+        #print(db_obj)
         if auth:
             payload = {
                 'email': db_obj["email"],
@@ -38,7 +39,7 @@ def buyer_login_service(data):
                 'exp': datetime.datetime.now(datetime.UTC) + datetime.timedelta(minutes=100)
             }
             token = generate_token(payload)
-            return generateJsonResponse(success=True, status=200, message="User login successful", data={'token': token})
+            return generateJsonResponse(success=True, status=200, message="User login successful", data={'token': token, 'buyer_id': str(db_obj["_id"])})
             #return {"status": token}
         else:
             return generateJsonResponse(success=False, status=401, message="Please enter correct password")

@@ -167,7 +167,9 @@ def seller_details_service(sel_id):
     except Exception as e:
         return generateJsonResponse(success=False, status=400, message=str(e))
         #return {"status": str(e)}
-    
+
+
+#Returns Feedbacks regarding a particular seller   
 def seller_feedback_service(sel_id):
     try:
         pipeline = [
@@ -248,3 +250,34 @@ def seller_get_products(sel_id):
         return generateJsonResponse(success=False, status=400, message=str(e))
         
 
+#Return all the sellers available in the database
+def get_sellers_service(params):
+    try:
+        results = seller_collection.find({}, {"password":0, "feedback":0})
+        # Pagination
+        page = int(params.get('page', 1))
+        limit = int(params.get('limit', 10))
+        skip = (page - 1) * limit
+        results = results.skip(skip).limit(limit)
+
+        # Check if the requested page exists
+        if 'page' in params:
+            seller_count = seller_collection.count_documents({})
+            if skip >= seller_count:
+                return generateJsonResponse(
+                    success=False, status=400, message="this page doesn't exist"
+                )
+        
+        #Convert ObjectIds into Simple String
+        results = list(results)
+        for seller in results:
+            seller['_id'] = str(seller['_id'])
+        return generateJsonResponse(
+            success=True,
+            status=200,
+            message=f"Found {len(results)} Sellers",
+            data = {'sellers': results}
+        )
+
+    except Exception as e:
+        return generateJsonResponse(success=False, status=400, message=str(e))

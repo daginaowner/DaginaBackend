@@ -31,12 +31,14 @@ def login():
         # Attempt buyer login first
         buyer_response = buyer_login_service(data)
         if buyer_response.get_json().get("success", False):  # Check if buyer login was successful
-            return buyer_response
+            # Add a "user_type" flag to indicate this is a buyer response
+            return generateJsonResponse(success=True, status=200, data=buyer_response.get_json().get("data"), user_type="buyer")
 
         # Attempt seller login if buyer login fails
         seller_response = seller_login_service(data)
         if seller_response.get_json().get("success", False):  # Check if seller login was successful
-            return seller_response
+            # Add a "user_type" flag to indicate this is a seller response
+            return generateJsonResponse(success=True, status=200, data=seller_response.get_json().get("data"), user_type="seller")
 
         # If neither login is successful, return a generic failure response
         return generateJsonResponse(success=False, status=401, message="Invalid credentials for both buyer and seller.")

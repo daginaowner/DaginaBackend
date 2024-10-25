@@ -15,4 +15,4 @@ def generateJsonResponse(success, status, message="", data=None, user_type=None)
     if user_type is not None:
         response['user_type'] = user_type
 
-    return jsonify(response)
+    return jsonify(response),status

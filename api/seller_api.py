@@ -1,5 +1,5 @@
 from flask import Blueprint, request
-from .sellerService import seller_signup_service, seller_login_service, seller_update_service, seller_delete_service, seller_details_service, seller_feedback_service
+from .sellerService import seller_signup_service, seller_login_service, seller_update_service, seller_delete_service, seller_details_service, seller_feedback_service, seller_get_products
 from .mongo_connect import DB
 from flask import request
 from dotenv import dotenv_values
@@ -81,4 +81,10 @@ def seller_feedbacks(seller_id):
     except Exception as e:
         return generateJsonResponse(success=False, status=400, message=str(e))
 
+@seller_route.route("/seller/getProducts/<string:seller_id>", methods=['GET'])
+def seller_getdetails(seller_id):
+    try:
+        return seller_get_products(seller_id)
+    except Exception as e:
+        return generateJsonResponse(success=False, status=400, message=str(e))
 

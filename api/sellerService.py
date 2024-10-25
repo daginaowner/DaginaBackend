@@ -25,6 +25,7 @@ def slugify(text):
 
 seller_collection = DB["Seller"]
 product_collection = DB["Products"]
+category_collection = DB["Categories"]
 config = dotenv_values(".env")
 
 def generate_token(payload):
@@ -135,9 +136,16 @@ def seller_update_service(data, auth):
 def seller_delete_service(auth):
     try:
         email = auth['email']
+        usr_id = auth['_id']
+
+        #First delete all seller products before deleting the seller
+        response1 = product_collection.delete_many({'seller_id': ObjectId(usr_id)})
+        #Also need to delete all the categories made by the seller
+        response2 = category_collection.delete_many({'created_by': ObjectId(usr_id)})
+
         result = seller_collection.delete_one(filter={"email":email})
         if result.deleted_count == 1:
-            return generateJsonResponse(success=True, status=200, message=f"{email} seller deleted")
+            return generateJsonResponse(success=True, status=200, message=f"{email} seller deleted", data={'productsDeleted': response1.deleted_count, 'categoriesDeleted': response2.deleted_count})
             #return {"status": f"{email} seller deleted"}
         elif result.deleted_count == 0:
             return generateJsonResponse(success=False, status=400, message=f"{email} doesn't exist or cannot be deleted")

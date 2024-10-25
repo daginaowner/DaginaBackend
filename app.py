@@ -5,6 +5,10 @@ from api.buyer_api import buyer_route
 from api.seller_api import seller_route
 from api.product_api import product_route
 from api.category_api import category_route
+from flask import request
+from api.buyerService import buyer_login_service
+from api.sellerService import seller_login_service
+from api.generateResp import generateJsonResponse
 app = Flask(__name__)
 
 CORS(app)
@@ -17,6 +21,29 @@ app.register_blueprint(category_route)
 @app.route('/', methods=['GET'])
 def hello():
     return 'Hello from server!'
+
+# common login 
+@app.route("/login", methods=['POST'])
+def login():
+    try:
+        data = request.get_json()
+
+        # Attempt buyer login first
+        buyer_response = buyer_login_service(data)
+        if buyer_response.get_json().get("success", False):  # Check if buyer login was successful
+            return buyer_response
+
+        # Attempt seller login if buyer login fails
+        seller_response = seller_login_service(data)
+        if seller_response.get_json().get("success", False):  # Check if seller login was successful
+            return seller_response
+
+        # If neither login is successful, return a generic failure response
+        return generateJsonResponse(success=False, status=401, message="Invalid credentials for both buyer and seller.")
+
+    except Exception as e:
+        return generateJsonResponse(success=False, status=400, message=str(e))
+
 
 if __name__ == "__main__":
     app.debug = True

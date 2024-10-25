@@ -7,6 +7,8 @@ from bson import ObjectId
 from .generateResp import generateJsonResponse
 
 buyer_collection = DB["Buyer"]
+product_collection = DB["Products"]
+seller_collection = DB["Seller"]
 config = dotenv_values(".env")
 
 def generate_token(payload):
@@ -164,3 +166,44 @@ def buyer_wishlist_rem_service(prod_id, auth):
             return {"status": f"{prod_id} removed from wishlist"}
     except Exception as e:
         return {"status": str(e)}
+    
+
+#Service for Adding Reviews by Buyers on Products
+def buyer_addprodrev_service(data, user_auth):
+    try:
+        user_id = user_auth['_id']
+        prod_id = data['prod_id']
+        comment = data['review']
+        rating = int(data['rating'])
+
+        #Check if the person adding review is not a seller
+        check = seller_collection.find_one({"_id": ObjectId(str(user_id))})
+        if check == None:
+            return generateJsonResponse(success=False, status=401, message=f"A seller cannot edit reviews")
+        #print("Reached here")
+        #Creating the Review document which is supposed to be added
+        sample = {
+            'ratedby': ObjectId(user_id),
+            'comment': comment,
+            'rating': int(rating)
+        }
+
+        #Check Given Rating Range
+        if rating > 5 or rating < 1:
+            return generateJsonResponse(success=False, status=401, message=f"Please give a rating between 1 and 5")
+
+        #Updating and Adding the review into the reviews array field
+        result = product_collection.update_one(
+            {'_id': ObjectId(prod_id)},
+            {
+                "$push" : {
+                    "reviews" : sample
+                }
+            }
+        )
+        if result.modified_count == 0:
+            return generateJsonResponse(success=False, status=401, message=f"Couldn't find the given product {prod_id}")
+        return generateJsonResponse(success=True, status=200, message=f"{result.matched_count} Object edited")
+
+    except Exception as e:
+        return generateJsonResponse(success=False, status=400, message=str(e))

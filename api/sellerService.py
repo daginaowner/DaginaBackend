@@ -7,6 +7,7 @@ from bson import ObjectId
 import re
 import unicodedata
 from .generateResp import generateJsonResponse
+from bson import ObjectId
 
 #Converts data into slug text
 def slugify(text):
@@ -23,6 +24,7 @@ def slugify(text):
     return text
 
 seller_collection = DB["Seller"]
+product_collection = DB["Products"]
 config = dotenv_values(".env")
 
 def generate_token(payload):
@@ -214,4 +216,27 @@ def seller_feedback_service(sel_id):
         #return {"status": str(e)}
     
 
+#Returns all the products made by that seller
+def seller_get_products(sel_id):
+    try:
+        products = list(product_collection.find({'seller_id': ObjectId(sel_id)}))
+        if len(products) == 0:
+            return generateJsonResponse(success=True, status=200, message=f"No products with given {sel_id} found!") 
+        
+        # Convert ObjectId fields to strings
+        for product in products:
+            product['_id'] = str(product['_id'])
+            if 'seller_id' in product:
+                product['seller_id'] = str(product['seller_id'])
+            if 'type_categories' in product:
+                product['type_categories'] = [str(cat) for cat in product['type_categories']]
+            if 'reviews' in product:
+                for review in product['reviews']:
+                    # Convert 'ratedby' field to ObjectId if it exists
+                    if 'ratedby' in review:
+                        review['ratedby'] = str(review['ratedby'])
+        return generateJsonResponse(success=True, status=200, message=f"Found {len(products)} products for {sel_id}", data={'products': products})
+    except Exception as e:
+        return generateJsonResponse(success=False, status=400, message=str(e))
+        
 

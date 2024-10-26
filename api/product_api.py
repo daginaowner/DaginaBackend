@@ -1,5 +1,5 @@
 from flask import Blueprint, request, jsonify
-from .product_service import get_products_service, get_product_by_id_service, create_product_service, delete_product_service, update_product_service
+from .product_service import get_products_service,get_products_by_ids_service, add_review_to_product_service,get_product_by_id_service, create_product_service, delete_product_service, update_product_service
 
 # Create a blueprint for product routes
 product_route = Blueprint('product_route', __name__)
@@ -26,6 +26,28 @@ def get_product_by_id(product_id):
             return jsonify(product), 200
         else:
             return jsonify({'error': 'Product not found'}), 404
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+# Route to get multiple products by an array of IDs
+@product_route.route('/products', methods=['POST'])
+def get_products_by_ids():
+    try:
+        # Expect an array of product IDs in the request body
+        data = request.get_json()
+        product_ids = data.get('product_ids')
+        
+        if not product_ids:
+            return jsonify({'error': 'product_ids is required and should be a list of IDs'}), 400
+        
+        # Call the service function to fetch products by IDs
+        products = get_products_by_ids_service(product_ids)
+        
+        if products:
+            return jsonify(products), 200
+        else:
+            return jsonify({'error': 'No products found for the given IDs'}), 404
+
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
@@ -57,6 +79,30 @@ def update_product(product_id):
             return jsonify({'error': 'Product not found'}), 404
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+    
+# Route to add a review to a product
+# @product_route.route('/products/<product_id>/add-review/<buyer_id>', methods=['POST'])
+# def add_review_to_product(product_id, buyer_id):
+#     try:
+#         # Parse review data from the request body
+#         review_data = request.get_json()
+
+#         # Check if review data is provided
+#         if not review_data:
+#             return jsonify({'error': 'Review data is required'}), 400
+
+#         # Validate required review fields
+#         if 'rating' not in review_data or 'comment' not in review_data:
+#             return jsonify({'error': 'Rating and comment are required in the review data'}), 400
+
+#         # Call the service function to add the review
+#         updated_product = add_review_to_product_service(product_id, buyer_id, review_data)
+
+#         # Return the updated product with the new review
+#         return jsonify(updated_product), 200
+
+#     except Exception as e:
+#         return jsonify({'error': str(e)}), 500
 
 # Route to delete a product
 @product_route.route('/products/<product_id>', methods=['DELETE'])

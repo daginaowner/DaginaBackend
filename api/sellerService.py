@@ -73,14 +73,17 @@ def seller_signup_service(data):
         if seller_collection.find_one(filter={"email":email}):
             return generateJsonResponse(success=False, status=401, message="This email already exists")
             #return {"status": "This email already exists"}
+
+        #Check is data contains all the required fields:
+        fields = ["name", "phone", "password" ,"storename", "address","city","state","pincode","gst","hallmark_no","pancard","bank","aadhar","account_no","ifsc"]
+        for f in fields:
+            if f not in data:
+                return generateJsonResponse(success=False, status=401, message=f"Please provide {f} field")
+        
         resp = seller_collection.insert_one({
-            "user_details":{
-                "fname": data["fname"],
-                "lname": data["lname"],
-                "recovery_mail": data["recovery_mail"],
-                "phn_no": data["phone"]
-            },
-            "profile_pic": data["profile_pic"],
+            "name": data["name"],
+            "phn_no": data["phone"],
+            "profile_pic": data.get("profile_pic",[]),
             "email": email,
             "password": encrypt_password(data["password"]),
             "store_name": data['storename'],
@@ -91,12 +94,19 @@ def seller_signup_service(data):
             "pincode": data["pincode"],
             "gstin_no": data["gst"],
             "gmap": {
-                "longitudes": data['longitudes'],
-                "latitudes": data['latitudes']
+                "longitudes": data.get('longitudes',0),
+                "latitudes": data.get('latitudes', 0)
             },
             "is_verified": False,
-            "images": data["images"],
+            "images": data.get("images",[]),
             "feedback": [],
+            "hallmark_number": data["hallmark_no"],
+            "pancard_number": data["pancard"],
+            "aadhar_number": data["aadhar"],
+            "bank_name": data["bank"],
+            "account_name": data["account"],
+            "account_number": data["account_no"],
+            "ifsc_code": data["ifsc"],
             "created_at": datetime.datetime.now(),
             "last_updated": datetime.datetime.now(),
         })

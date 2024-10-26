@@ -57,11 +57,17 @@ def buyer_signup_service(data):
         if buyer_collection.find_one(filter={"email":email}):
             return generateJsonResponse(success=False, status=401, message="This email already exists")
             #return {"status": "This email already exists"}
+
+        #Check if all the fields are submitted
+        keys = ["email","name","phone","password","address","city","state","pincode"]
+        for i in keys:
+            if i not in data:
+                return generateJsonResponse(success=False, status=401, message=f"Missing field {i}")
+
         resp = buyer_collection.insert_one({
             "email": email,
-            "fname": data["fname"],
-            "lname": data["lname"],
-            "phn_no": data["phone"],
+            "name": data["name"],
+            "phn_no": str(data["phone"]),
             "password": encrypt_password(data["password"]),
             "address": data["address"],
             "city": data["city"],
@@ -83,23 +89,41 @@ def buyer_update_service(data, auth):
     try:
         email = auth['email']
         filters = {"email":email}
-        keys = ["fname","lname","phn_no","password","address","city","state","pincode","wishlist","orders"]
+
+        #Keep all the fields editable for Buyer Data
+        keys = ["email","name","phn_no","address","city","state","pincode"]
         for key in data:
             if key not in keys:
                 return generateJsonResponse(success=False, status=401, message="Invalid Key, Please update only valid keys")
-                #return {"status": "Invalid Key, Please update only valid keys"}
-        if "password" in data:
-            data['password'] = encrypt_password(data['password'])
+               
+        #Check if user wants to edit email id itself
+        if "email" in data:
+            res = buyer_collection.find_one({"email": data["email"]})
+            if res != None:
+                return generateJsonResponse(success=False, status=401, message=f"This {data["email"]} email cannot be used as it is already used in the system!")
+
         result = buyer_collection.update_one(filters, {"$set" : data})
         if result.matched_count == 0:
-            return generateJsonResponse(success=False, status=401, message="No user matched with this email")
-            #return {"status": "No user matched with this email"}
+            return generateJsonResponse(success=False, status=401, message=f"{email} this user does not exists!")
         else:
-            return generateJsonResponse(success=True, status=200, message=f"{email} User modified", data={'new_id': {result.upserted_id}})
-            #return {"status": f"{email} user modified. New id is {result.upserted_id}"}
+            email = auth['email']
+            idd = auth['_id']
+
+            if "email" in data:
+                email = data["email"]
+            if result.upserted_id != None:
+                idd = str(result.upserted_id)
+
+            payload = {
+                'email': email,
+                '_id': str(idd),
+                'exp': datetime.datetime.now(datetime.UTC) + datetime.timedelta(minutes=100)
+            }
+            token = generate_token(payload)
+            return generateJsonResponse(success=True, status=200, message=f"{email} User modified", data={'new_id': result.upserted_id, 'token': token})
     except Exception as e:
         return generateJsonResponse(success=False, status=400, message=str(e))
-        #return {"status": str(e)}
+
 
 def buyer_delete_service(auth):
     try:

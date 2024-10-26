@@ -1,5 +1,5 @@
 from flask import Blueprint, request
-from .buyerService import buyer_signup_service, buyer_login_service, buyer_update_service, buyer_delete_service, buyer_details_service, buyer_wishlist_service, buyer_wishlist_add_service, buyer_wishlist_rem_service, buyer_addprodrev_service
+from .buyerService import buyer_signup_service, buyer_login_service, buyer_update_service, buyer_delete_service, buyer_details_service, buyer_wishlist_service, buyer_wishlist_add_service, buyer_wishlist_rem_service, buyer_addprodrev_service, buyer_addsellerrev_service
 from .mongo_connect import DB
 from flask import request
 from dotenv import dotenv_values
@@ -125,5 +125,23 @@ def buyer_add_product_review():
         else:
             data = request.get_json()
             return buyer_addprodrev_service(data, auth)
+    except Exception as e:
+        return generateJsonResponse(success=False, status=400, message=str(e))
+    
+
+@buyer_route.route("/buyer/addSellerReview", methods=['POST'])
+def buyer_add_seller_review():
+    try:
+        tok = request.headers.get('token')
+        if tok is None:
+            return generateJsonResponse(success=False, status=400, message="Please provide auth token")
+            #return {"status": "Please provide auth token"}
+        auth, msg = decode_token(tok)
+        if auth == None:
+            return generateJsonResponse(success=False, status=400, message=msg)
+            #return msg
+        else:
+            data = request.get_json()
+            return buyer_addsellerrev_service(data, auth)
     except Exception as e:
         return generateJsonResponse(success=False, status=400, message=str(e))

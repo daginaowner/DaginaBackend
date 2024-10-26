@@ -1,5 +1,5 @@
 from flask import Blueprint, request, jsonify
-from .product_service import get_products_service,get_products_by_ids_service, add_review_to_product_service,get_product_by_id_service, create_product_service, delete_product_service, update_product_service
+from .product_service import get_products_service,get_products_by_ids_service,get_product_by_id_service, create_product_service, delete_product_service, update_product_service
 
 # Create a blueprint for product routes
 product_route = Blueprint('product_route', __name__)

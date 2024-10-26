@@ -3,9 +3,8 @@ from .mongo_connect import DB
 from bson.objectid import ObjectId
 
 # Get the categories collection from the database
-categories_collection = DB.Categories
-seller_collection = DB.Sellers
-
+categories_collection = DB["Categories"]
+seller_collection = DB["Seller"]
 # Service to get a category by its ID
 def get_category_by_id_service(category_id):
     try:
@@ -14,10 +13,11 @@ def get_category_by_id_service(category_id):
             category['_id'] = str(category['_id'])  # Convert ObjectId to string for JSON
             # Fetch seller information for the `created_by` field
             seller = seller_collection.find_one({"_id": ObjectId(category['created_by'])})
+            
             if seller:
                 category['created_by'] = {
                     '_id': str(seller['_id']),
-                    'name': seller.get('name'),  # Include seller name
+                    'name': seller.get("user_details").get('fname') + " " +  seller.get("user_details").get('lname'),  # Include seller name
                     'email': seller.get('email'),  # Include seller email
                 }
             else:

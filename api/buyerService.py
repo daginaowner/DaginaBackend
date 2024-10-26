@@ -41,7 +41,7 @@ def buyer_login_service(data):
                 'exp': datetime.datetime.now(datetime.UTC) + datetime.timedelta(minutes=100)
             }
             token = generate_token(payload)
-            return {"success":True, "data": {'token': token, 'buyer_id': str(db_obj["_id"])}}
+            return {"success":True, "data": {'token': token, '_id': str(db_obj["_id"])}}
             #return generateJsonResponse(success=True, status=200, message="User login successful", data={'token': token, 'buyer_id': str(db_obj["_id"])})
             #return {"status": token}
         else:

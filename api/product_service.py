@@ -38,6 +38,12 @@ def get_products_service(query_params):
                 query[key.replace('__lt', '')] = {'$lt': float(value)}
             else:
                 query[key] = value  # Normal fields
+        
+            if 'seller_id' in query_params:
+                try:
+                    query['seller_id'] = ObjectId(query_params['seller_id'])  # Convert to ObjectId
+                except Exception:
+                    raise ValueError("Invalid seller_id format")
 
         print(f"MongoDB Query: {query}")  # Debugging
 

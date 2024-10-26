@@ -46,7 +46,7 @@ def seller_login_service(data):
         db_obj = seller_collection.find_one({"email": email}, 
             {"_id":1, "email": 1, "password":1})
         if db_obj == None:
-            return generateJsonResponse(success=False, status=401, message="Account with this email doesn't exist. Please create an account first!")
+            return {"success":False, "data": "Account with this email doesn't exist. Please create an account first!"}
             #return {"status": "Account with this email doesn't exist. Please create an account first!"}
         usr_passwd = data['password']
         auth = compare_passwords(usr_passwd, db_obj["password"])
@@ -57,13 +57,14 @@ def seller_login_service(data):
                 'exp': datetime.datetime.now(datetime.UTC) + datetime.timedelta(minutes=100)
             }
             token = generate_token(payload)
-            return generateJsonResponse(success=True, status=200, message="Login successful", data={'token': token, "_id":str(db_obj["_id"])})
+            return {"success":True, "data" : {'token': token, "_id":str(db_obj["_id"])}}
+            #return generateJsonResponse(success=True, status=200, message="Login successful", data={'token': token, "_id":str(db_obj["_id"])})
             #return {"status": token}
         else:
-            return generateJsonResponse(success=False, status=401, message="Please enter correct password")
+            return {"success":False, "data" : "Please enter correct password"}
             #return {"status": "Please enter correct password"}
     except Exception as e:
-        return generateJsonResponse(success=False, status=400, message=str(e))
+        return {"success":False, "data": str(e)}
         #return {"status": str(e)}
 
 def seller_signup_service(data):

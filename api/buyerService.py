@@ -29,7 +29,7 @@ def buyer_login_service(data):
         db_obj = buyer_collection.find_one({"email": email}, 
             {"_id":1, "email": 1, "password":1})
         if db_obj == None:
-            return generateJsonResponse(success=False, status=401, message="Account with this email doesn't exist. Please create an account first!")
+            return {"success":False, "data": "Account with this email doesn't exist. Please create an account first!"}
             #return {"status": "Account with this email doesn't exist. Please create an account first!"}
         usr_passwd = data['password']
         auth = compare_passwords(usr_passwd, db_obj["password"])
@@ -41,10 +41,12 @@ def buyer_login_service(data):
                 'exp': datetime.datetime.now(datetime.UTC) + datetime.timedelta(minutes=100)
             }
             token = generate_token(payload)
-            return generateJsonResponse(success=True, status=200, message="User login successful", data={'token': token, 'buyer_id': str(db_obj["_id"])})
+            return {"success":True, "data": {'token': token, 'buyer_id': str(db_obj["_id"])}}
+            #return generateJsonResponse(success=True, status=200, message="User login successful", data={'token': token, 'buyer_id': str(db_obj["_id"])})
             #return {"status": token}
         else:
-            return generateJsonResponse(success=False, status=401, message="Please enter correct password")
+            return {"success":False, "data": "Please enter correct password"}
+            #return generateJsonResponse(success=False, status=401, message="Please enter correct password")
             #return {"status": "Please enter correct password"}
     except Exception as e:
         generateJsonResponse(success=True, status=200, message=str(e))
@@ -178,7 +180,8 @@ def buyer_addprodrev_service(data, user_auth):
 
         #Check if the person adding review is not a seller
         check = seller_collection.find_one({"_id": ObjectId(str(user_id))})
-        if check == None:
+        print(check)
+        if check != None:
             return generateJsonResponse(success=False, status=401, message=f"A seller cannot edit reviews")
         #print("Reached here")
         #Creating the Review document which is supposed to be added

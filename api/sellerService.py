@@ -75,14 +75,14 @@ def seller_signup_service(data):
             #return {"status": "This email already exists"}
 
         #Check is data contains all the required fields:
-        fields = ["name", "phone", "password" ,"storename", "address","city","state","pincode","gst","hallmark_no","pancard","bank","aadhar","account_no","ifsc"]
+        fields = ["name", "phn_no", "password" ,"storename", "address","city","state","pincode","gst","hallmark_no","pancard","bank","aadhar","account_no","ifsc"]
         for f in fields:
             if f not in data:
                 return generateJsonResponse(success=False, status=401, message=f"Please provide {f} field")
         
         resp = seller_collection.insert_one({
             "name": data["name"],
-            "phn_no": data["phone"],
+            "phn_no": data["phn_no"],
             "profile_pic": data.get("profile_pic",[]),
             "email": email,
             "password": encrypt_password(data["password"]),
@@ -122,23 +122,46 @@ def seller_update_service(data, auth):
     try:
         email = auth['email']
         filters = {"email":email}
-        keys = ["user_details.fname","user_details.lname","user_details.recovery_mail","user_details.phn_no",
-                "profile_pic","password","store_name","city","state","pincode","gstin_no",
-                "gmap.longitudes", "gmap.latitudes", "is_verified", "images"]
+        keys = ["name", "phn_no","email",
+                "profile_pic","store_name","address","city","state","pincode",
+                "gmap.longitudes", "gmap.latitudes", "images", "bank_name", "account_name", "account_number", "ifsc_code"]
+        
+        #Check to update only valid keys
         for key in data:
             if key not in keys:
                 return generateJsonResponse(success=False, status=401, message="Invalid Key, Please update only valid keys")
                 #return {"status": "Invalid Key, Please update only valid keys"}
+
         if "store_name" in data:
             data["store_slug"] = slugify(data["store_name"])
-        if "password" in data:
-            data["password"] = encrypt_password(data["password"])
+
+        #Check if user wants to edit email id itself
+        if "email" in data:
+            res = seller_collection.find_one({"email": data['email']})
+            if res != None:
+                return generateJsonResponse(success=False, status=401, message=f"This {data['email']} email cannot be used as it is already used in the system!")
+        
         result = seller_collection.update_one(filters, {"$set" : data})
         if result.matched_count == 0:
-            return generateJsonResponse(success=False, status=401, message="No user matched with this email")
+            return generateJsonResponse(success=False, status=401, message=f"Seller {email} cannot be found")
             #return {"status": "No user matched with this email"}
         else:
-            return generateJsonResponse(success=True, status=200, message=f"{email} user modified.", data={'new_id': result.upserted_id})
+            email = auth['email']
+            idd = auth['_id']
+
+            #Updating new email and id if generated or needed
+            if "email" in data:
+                email = data["email"]
+            if result.upserted_id != None:
+                idd = str(result.upserted_id)
+
+            payload = {
+                'email': email,
+                '_id': str(idd),
+                'exp': datetime.datetime.now(datetime.UTC) + datetime.timedelta(minutes=100)
+            }
+            token = generate_token(payload)
+            return generateJsonResponse(success=True, status=200, message=f"{email} user modified.", data={'new_id': idd, 'token': token})
             #return {"status": f"{email} user modified. New id is {result.upserted_id}"}
     except Exception as e:
         return generateJsonResponse(success=False, status=400, message=str(e))

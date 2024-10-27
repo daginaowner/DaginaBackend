@@ -98,9 +98,9 @@ def buyer_update_service(data, auth):
                
         #Check if user wants to edit email id itself
         if "email" in data:
-            res = buyer_collection.find_one({"email": data["email"]})
+            res = buyer_collection.find_one({"email": data['email']})
             if res != None:
-                return generateJsonResponse(success=False, status=401, message=f"This {data["email"]} email cannot be used as it is already used in the system!")
+                return generateJsonResponse(success=False, status=401, message=f"This {data['email']} email cannot be used as it is already used in the system!")
 
         result = buyer_collection.update_one(filters, {"$set" : data})
         if result.matched_count == 0:

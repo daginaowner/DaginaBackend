@@ -46,7 +46,7 @@ def seller_update():
             return {"status": "Please provide auth token"}
         auth, msg = decode_token(tok)
         if auth == None:
-            return msg
+            return generateJsonResponse(success=False, status=401, message=str(msg))
         else:
             data = request.get_json()
             return seller_update_service(data, auth)

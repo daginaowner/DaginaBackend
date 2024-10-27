@@ -120,7 +120,7 @@ def buyer_update_service(data, auth):
                 'exp': datetime.datetime.now(datetime.UTC) + datetime.timedelta(minutes=100)
             }
             token = generate_token(payload)
-            return generateJsonResponse(success=True, status=200, message=f"{email} User modified", data={'new_id': result.upserted_id, 'token': token})
+            return generateJsonResponse(success=True, status=200, message=f"{email} User modified", data={'new_id': idd, 'token': token})
     except Exception as e:
         return generateJsonResponse(success=False, status=400, message=str(e))
 

@@ -3,16 +3,25 @@ from .mongo_connect import DB
 from bson.objectid import ObjectId
 
 # Get the categories collection from the database
-categories_collection = DB.Categories
-
-
+categories_collection = DB["Categories"]
+seller_collection = DB["Seller"]
 # Service to get a category by its ID
 def get_category_by_id_service(category_id):
     try:
         category = categories_collection.find_one({"_id": ObjectId(category_id)})  # Find category by ID
         if category:
             category['_id'] = str(category['_id'])  # Convert ObjectId to string for JSON
-            category['created_by'] = str(category['created_by'])  # Convert created_by ObjectId to string
+            # Fetch seller information for the `created_by` field
+            seller = seller_collection.find_one({"_id": ObjectId(category['created_by'])})
+            
+            if seller:
+                category['created_by'] = {
+                    '_id': str(seller['_id']),
+                    'name': seller.get("user_details").get('fname') + " " +  seller.get("user_details").get('lname'),  # Include seller name
+                    'email': seller.get('email'),  # Include seller email
+                }
+            else:
+                category['created_by'] = None 
             return category
         else:
             return None  # Return None if no category is found
@@ -29,6 +38,22 @@ def get_categories_service():
         return categories
     except Exception as e:
         raise Exception(f"Error fetching categories: {str(e)}")
+
+def get_categories_by_seller_service(seller_id):
+    try:
+        # Convert seller_id to ObjectId
+        seller_object_id = ObjectId(seller_id)
+        
+        # Fetch categories created by the specified seller
+        categories = list(categories_collection.find({"created_by": seller_object_id}))  
+        
+        for category in categories:
+            category['_id'] = str(category['_id'])  # Convert ObjectId to string for easier JSON serialization
+            category['created_by'] = str(category['created_by'])  # Also convert created_by to string
+        
+        return categories
+    except Exception as e:
+        raise Exception(f"Error fetching categories for seller {seller_id}: {str(e)}")
 
 # Service to create a new category
 def create_category_service(title, description, created_by):
@@ -49,16 +74,21 @@ def create_category_service(title, description, created_by):
         raise Exception(f"Error creating category: {str(e)}")
 
 # Service to update an existing category
-def update_category_service(category_id, title, description):
+def update_category_service(category_id, seller_id, title, description):
     try:
-        category = categories_collection.find_one({"_id": ObjectId(category_id)})  # Find category by ID
+        # Find the category by ID
+        category = categories_collection.find_one({"_id": ObjectId(category_id)})
         if not category:
             return None
 
-        # Update the category fields
+        # Check if the provided seller_id matches the created_by field
+        if str(category['created_by']) != seller_id:
+            raise Exception("Unauthorized: You do not have permission to update this category")
+
+        # Prepare the fields for update
         update_fields = {
             "title": title,
-            "slug": title.lower().replace(" ", "_"),  # Update slug
+            "slug": title.lower().replace(" ", "_"),  # Update slug based on title
             "description": description,
             "timestamp": datetime.utcnow()  # Update timestamp
         }
@@ -66,7 +96,7 @@ def update_category_service(category_id, title, description):
         # Perform the update
         categories_collection.update_one({"_id": ObjectId(category_id)}, {"$set": update_fields})
 
-        # Fetch the updated document and return it
+        # Fetch and return the updated document
         updated_category = categories_collection.find_one({"_id": ObjectId(category_id)})
         updated_category['_id'] = str(updated_category['_id'])  # Convert ObjectId to string
         updated_category['created_by'] = str(updated_category['created_by'])  # Convert ObjectId to string

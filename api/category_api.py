@@ -5,7 +5,7 @@ from .category_service import get_categories_service, get_categories_by_seller_s
 category_route = Blueprint('category_route', __name__)
 
 # Route to get details of a specific category by its ID
-@category_route.route('/categories/<category_id>', methods=['GET'])
+@category_route.route('/get_categories/<category_id>', methods=['GET'])
 def get_category_by_id(category_id):
     try:
         category = get_category_by_id_service(category_id)  # Call service to fetch category by ID
@@ -18,7 +18,7 @@ def get_category_by_id(category_id):
 
 
 # Route to get all categories
-@category_route.route('/categories', methods=['GET'])
+@category_route.route('/get_allcategories', methods=['GET'])
 def get_categories():
     try:
         categories = get_categories_service()  # Call service to fetch categories
@@ -26,6 +26,8 @@ def get_categories():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
     
+
+# Route for getting all categories from a seller
 @category_route.route('/categories/seller/<seller_id>', methods=['GET'])
 def get_categories_by_seller(seller_id):
     try:
@@ -41,7 +43,7 @@ def get_categories_by_seller(seller_id):
 
 
 # Route to create a new category
-@category_route.route('/categories', methods=['POST'])
+@category_route.route('/categories/create', methods=['POST'])
 def create_category():
     try:
         data = request.get_json()  # Get JSON data from request
@@ -58,8 +60,9 @@ def create_category():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+
 # Route to update an existing category
-@category_route.route('/categories/<category_id>/<seller_id>', methods=['PUT'])
+@category_route.route('/categories/update/<category_id>/<seller_id>', methods=['PUT'])
 def update_category(category_id, seller_id):
     try:
         data = request.get_json()  # Get JSON data from request
@@ -81,8 +84,9 @@ def update_category(category_id, seller_id):
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+
 # Route to delete a category
-@category_route.route('/categories/<category_id>', methods=['DELETE'])
+@category_route.route('/categories/delete/<category_id>', methods=['DELETE'])
 def delete_category(category_id):
     try:
         # Call service to delete category

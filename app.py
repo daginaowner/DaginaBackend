@@ -5,6 +5,7 @@ from api.buyer_api import buyer_route
 from api.seller_api import seller_route
 from api.product_api import product_route
 from api.category_api import category_route
+from api.enquiries_api import enquiries_route
 from flask import request
 from api.buyerService import buyer_login_service
 from api.sellerService import seller_login_service
@@ -16,6 +17,7 @@ app.register_blueprint(buyer_route)
 app.register_blueprint(seller_route)
 app.register_blueprint(product_route)
 app.register_blueprint(category_route)
+app.register_blueprint(enquiries_route)
 
 
 @app.route('/', methods=['GET'])

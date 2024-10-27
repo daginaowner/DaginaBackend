@@ -184,6 +184,7 @@ def get_products_by_ids_service(product_ids):
 # Service to create a new product
 def create_product_service(data):
     try:
+        #print(data)
         data['created_at'] = datetime.utcnow()  # Add creation timestamp
         # Ensure that ObjectId fields are converted to the appropriate format
         if 'type_categories' in data:

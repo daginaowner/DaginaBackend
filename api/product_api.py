@@ -4,7 +4,7 @@ from .product_service import get_products_service,get_products_by_ids_service,ge
 # Create a blueprint for product routes
 product_route = Blueprint('product_route', __name__)
 
-@product_route.route('/products', methods=['GET'])
+@product_route.route('/getproducts', methods=['GET'])
 def get_products():
     try:
         # Extract query parameters from the request (for filtering, sorting, pagination, etc.)
@@ -18,7 +18,7 @@ def get_products():
         return jsonify({'error': str(e)}), 500
 
 # Route to get individual product details by ID
-@product_route.route('/products/<product_id>', methods=['GET'])
+@product_route.route('/getproduct_by_id/<product_id>', methods=['GET'])
 def get_product_by_id(product_id):
     try:
         product = get_product_by_id_service(product_id)  # Call service to fetch product by ID
@@ -30,7 +30,7 @@ def get_product_by_id(product_id):
         return jsonify({'error': str(e)}), 500
 
 # Route to get multiple products by an array of IDs
-@product_route.route('/products', methods=['POST'])
+@product_route.route('/getproduct_by_ids', methods=['POST'])
 def get_products_by_ids():
     try:
         # Expect an array of product IDs in the request body
@@ -52,11 +52,12 @@ def get_products_by_ids():
         return jsonify({'error': str(e)}), 500
 
 # Route to create a new product
-@product_route.route('/products', methods=['POST'])
+@product_route.route('/products/create', methods=['POST'])
 def create_product():
     try:
         data = request.get_json()  # Get JSON data from request
         # Check required fields
+        #print(data)
         required_fields = ['product_name', 'description', 'price', 'type_jewellery', 'seller_id']
         if not all(field in data for field in required_fields):
             return jsonify({'error': 'Missing required fields'}), 400
@@ -68,7 +69,7 @@ def create_product():
         return jsonify({'error': str(e)}), 500
 
 # Route to update an existing product
-@product_route.route('/products/<product_id>', methods=['PUT'])
+@product_route.route('/products/update/<product_id>', methods=['PUT'])
 def update_product(product_id):
     try:
         data = request.get_json()  # Get JSON data from request
@@ -105,7 +106,7 @@ def update_product(product_id):
 #         return jsonify({'error': str(e)}), 500
 
 # Route to delete a product
-@product_route.route('/products/<product_id>', methods=['DELETE'])
+@product_route.route('/products/delete/<product_id>', methods=['DELETE'])
 def delete_product(product_id):
     try:
         deleted = delete_product_service(product_id)  # Call service to delete product

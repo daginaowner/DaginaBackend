@@ -113,7 +113,7 @@ def seller_signup_service(data):
         if resp.inserted_id:
             return generateJsonResponse(success=True, status=201, message="User added as seller")
             #return {"status": "User added as Seller"}
-        return {"status": "An error occured"}
+        return generateJsonResponse(success=False, status=400, message="An error occured")
     except Exception as e:
         return generateJsonResponse(success=False, status=400, message=str(e))
         #return {"status": str(e)}

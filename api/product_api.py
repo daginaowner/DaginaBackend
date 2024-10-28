@@ -1,8 +1,24 @@
 from flask import Blueprint, request, jsonify
 from .product_service import get_products_service,get_products_by_ids_service,get_product_by_id_service, create_product_service, delete_product_service, update_product_service
+import jwt
+from dotenv import dotenv_values
+from .generateResp import generateJsonResponse
 
 # Create a blueprint for product routes
 product_route = Blueprint('product_route', __name__)
+
+#Function for decoding the token
+def decode_token(token):
+    decoded_payload = None
+    try:
+        config = dotenv_values(".env")
+        secret = config.get("TOKEN_SECRET")
+        decoded_payload = jwt.decode(token, secret, algorithms=["HS256"])
+        return decoded_payload , {}
+    except jwt.ExpiredSignatureError:
+        return decoded_payload, {"status": "Token Expired"}
+    except jwt.InvalidTokenError:
+        return decoded_payload, {"status": "Token Invalid"}
 
 @product_route.route('/getproducts', methods=['GET'])
 def get_products():
@@ -17,6 +33,7 @@ def get_products():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+
 # Route to get individual product details by ID
 @product_route.route('/getproduct_by_id/<product_id>', methods=['GET'])
 def get_product_by_id(product_id):
@@ -28,6 +45,7 @@ def get_product_by_id(product_id):
             return jsonify({'error': 'Product not found'}), 404
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
 
 # Route to get multiple products by an array of IDs
 @product_route.route('/getproduct_by_ids', methods=['POST'])
@@ -51,59 +69,48 @@ def get_products_by_ids():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+
 # Route to create a new product
 @product_route.route('/products/create', methods=['POST'])
 def create_product():
     try:
+        tok = request.headers.get('token')
+        if tok is None:
+            return generateJsonResponse(success=False, status=400, message="Please provide auth token")
+        auth, msg = decode_token(tok)
+        if auth == None:
+            return generateJsonResponse(success=False, status=401, message=str(msg))
+
         data = request.get_json()  # Get JSON data from request
         # Check required fields
         #print(data)
-        required_fields = ['product_name', 'description', 'price', 'type_jewellery', 'seller_id']
+        required_fields = ['product_name', 'description', 'price', 'type_jewellery']
         if not all(field in data for field in required_fields):
-            return jsonify({'error': 'Missing required fields'}), 400
+            return generateJsonResponse(success=False, status=401, message="Missing required fields")
         
         # Call service to create a new product
-        product = create_product_service(data)
-        return jsonify(product), 201
+        return create_product_service(data, auth)
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return generateJsonResponse(success=False, status=400, message=str(e))
+
 
 # Route to update an existing product
 @product_route.route('/products/update/<product_id>', methods=['PUT'])
 def update_product(product_id):
     try:
+        tok = request.headers.get('token')
+        if tok is None:
+            return generateJsonResponse(success=False, status=400, message="Please provide auth token")
+        auth, msg = decode_token(tok)
+        if auth == None:
+            return generateJsonResponse(success=False, status=401, message=str(msg))
+        
         data = request.get_json()  # Get JSON data from request
-        updated_product = update_product_service(product_id, data)  # Call service to update product
-        if updated_product:
-            return jsonify(updated_product), 200
-        else:
-            return jsonify({'error': 'Product not found'}), 404
+        return update_product_service(product_id, data, auth)  # Call service to update product
+        
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return generateJsonResponse(success=False, status=400, message=str(e))
     
-# Route to add a review to a product
-# @product_route.route('/products/<product_id>/add-review/<buyer_id>', methods=['POST'])
-# def add_review_to_product(product_id, buyer_id):
-#     try:
-#         # Parse review data from the request body
-#         review_data = request.get_json()
-
-#         # Check if review data is provided
-#         if not review_data:
-#             return jsonify({'error': 'Review data is required'}), 400
-
-#         # Validate required review fields
-#         if 'rating' not in review_data or 'comment' not in review_data:
-#             return jsonify({'error': 'Rating and comment are required in the review data'}), 400
-
-#         # Call the service function to add the review
-#         updated_product = add_review_to_product_service(product_id, buyer_id, review_data)
-
-#         # Return the updated product with the new review
-#         return jsonify(updated_product), 200
-
-#     except Exception as e:
-#         return jsonify({'error': str(e)}), 500
 
 # Route to delete a product
 @product_route.route('/products/delete/<product_id>', methods=['DELETE'])

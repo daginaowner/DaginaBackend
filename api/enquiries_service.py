@@ -31,7 +31,7 @@ def create_enquiry_service(data):
 def get_enquiry_service(data):
     try:
         seller_id = str(data["seller_id"])
-        print(seller_id)
+        #print(seller_id)
         result = list(enquiry_collection.find({"seller_id": ObjectId(seller_id)}))
         for i in result:
             i['_id'] = str(i['_id'])
@@ -40,3 +40,12 @@ def get_enquiry_service(data):
         return generateJsonResponse(success=True, status=200, message=f"{len(result)} Enquiries found", data={'enquiries': result})
     except Exception as e:
         return generateJsonResponse(success=False, status=400, message=str(e))
+
+def delete_enquiry_service(data):
+    try:
+        ids = [ObjectId(str(x)) for x in data['_ids']]
+        query = {"_id": {"$in": ids}}
+        resp = enquiry_collection.delete_many(query)
+        return generateJsonResponse(success=True, status=200, message=f"Recieved {len(ids)} for deletion. {resp.deleted_count} Enquiries deleted!")
+    except Exception as e:
+        return generateJsonResponse(success=False, status=401, message=str(e))

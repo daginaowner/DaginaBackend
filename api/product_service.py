@@ -181,24 +181,31 @@ def get_products_by_ids_service(product_ids):
     except Exception as e:
         raise Exception(f"Error fetching products by IDs: {str(e)}")
 
+ALLOWED_KEYS = {
+    "product_name", "slug", "images", "description", "is_premium", "price", "discount",
+    "resale_value", "type_jewellery",  "materials_quantity", "size",
+    "extra_details", "hallmark_certificates", "seller_id"
+}
 # Service to create a new product
 def create_product_service(data):
     try:
-        #print(data)
-        data['created_at'] = datetime.utcnow()  # Add creation timestamp
-        # Ensure that ObjectId fields are converted to the appropriate format
-        if 'type_categories' in data:
-            data['type_categories'] = [ObjectId(cat) for cat in data['type_categories']]  # Convert category IDs to ObjectId
-        if 'seller_id' in data:
-            data['seller_id'] = ObjectId(data['seller_id'])  # Convert seller_id to ObjectId
-        if 'reviews' in data:
-            # Iterate through each review
-            for review in data['reviews']:
-                # Convert 'ratedby' field to ObjectId if it exists
-                if 'ratedby' in review:
-                    review['ratedby'] = ObjectId(review['ratedby'])
+        validated_data = {key: data[key] for key in data if key in ALLOWED_KEYS}
 
-        result = products_collection.insert_one(data)  # Insert new product
+        # Ensure necessary fields have default values
+        validated_data['created_at'] = datetime.utcnow()  # Creation timestamp
+        validated_data['clicks'] = 0  # Initialize clicks to 0
+        validated_data['likes'] = 0   # Initialize likes to 0
+        validated_data['reviews'] = []  # Ensure reviews is an empty list
+        validated_data['type_categories'] = []  # Ensure reviews is an empty list
+
+        # Convert ObjectId fields where needed
+        if 'type_categories' in validated_data:
+            validated_data['type_categories'] = [ObjectId(cat) for cat in validated_data['type_categories']]
+        if 'seller_id' in validated_data:
+            validated_data['seller_id'] = ObjectId(validated_data['seller_id'])
+
+        # Insert the product into the collection
+        result = products_collection.insert_one(validated_data)
         new_product = products_collection.find_one({"_id": result.inserted_id})
         new_product['_id'] = str(new_product['_id'])  # Convert ObjectId to string
         new_product['seller_id'] = str(new_product['seller_id'])  # Convert seller_id ObjectId to string
@@ -213,36 +220,88 @@ def create_product_service(data):
     except Exception as e:
         raise Exception(f"Error creating product: {str(e)}")
 
-# Service to update an existing product
+# Allowed fields for updates, excluding fields like `seller_id` that shouldn't be changed
+ALLOWED_UPDATE_FIELDS = {
+    "product_name", "slug", "images", "description", "is_premium", "price", "discount",
+    "resale_value", "type_jewellery", "type_categories", "materials_quantity", "size",
+    "extra_details", "hallmark_certificates","likes", "reviews"
+}
+
+def validate_product_data(data):
+    errors = []
+    
+    # Validate numeric fields
+    if 'price' in data and not isinstance(data['price'], (int, float)):
+        errors.append("Price must be a numeric value.")
+    if 'discount' in data and (not isinstance(data['discount'], int) or not (0 <= data['discount'] <= 100)):
+        errors.append("Discount must be an integer between 0 and 100.")
+    if 'likes' in data and not isinstance(data['likes'], int):
+        errors.append("Likes must be an integer.")
+
+    # Validate fields with specific structure
+    if 'type_categories' in data:
+        if not isinstance(data['type_categories'], list) or not all(isinstance(cat, str) for cat in data['type_categories']):
+            errors.append("Type categories must be a list of strings.")
+    if 'reviews' in data:
+        if not isinstance(data['reviews'], list) or not all(isinstance(review, dict) for review in data['reviews']):
+            errors.append("Reviews must be a list of dictionaries.")
+
+    # Validate structure of nested fields if they are present
+    if 'materials_quantity' in data and not isinstance(data['materials_quantity'], dict):
+        errors.append("Materials quantity must be a dictionary.")
+    if 'size' in data and not isinstance(data['size'], dict):
+        errors.append("Size must be a dictionary.")
+    
+    return errors
 def update_product_service(product_id, data):
     try:
-        if 'title' in data:
-            data['slug'] = generate_slug(data['title'])
+        # Filter out any fields that are not allowed
+        data = {key: value for key, value in data.items() if key in ALLOWED_UPDATE_FIELDS}
+        
+        # Validate the input data
+        validation_errors = validate_product_data(data)
+        if validation_errors:
+            return {"error": validation_errors}, 400
+        
+        # Special handling for slug if 'product_name' is updated
+        if 'product_name' in data:
+            data['slug'] = generate_slug(data['product_name'])
+        
+        # Convert specific fields to ObjectId where necessary
         if 'type_categories' in data:
-            data['type_categories'] = [ObjectId(cat) for cat in data['type_categories']]  # Convert category IDs to ObjectId
+            data['type_categories'] = [ObjectId(cat) for cat in data['type_categories']]
+        
+        # Convert reviews to include ObjectId for 'ratedby' field if provided
         if 'reviews' in data:
-            data['reviews'] = [ObjectId(review) for review in data['reviews']]
-        if 'seller_id' in data:
-            data['seller_id'] = ObjectId(data['seller_id'])  # Convert seller_id to ObjectId
-        data['updated_at'] = datetime.utcnow()  # Add update timestamp
-
-        result = products_collection.update_one({"_id": ObjectId(product_id)}, {"$set": data})  # Update the product
-        if result.modified_count > 0:
-            updated_product = products_collection.find_one({"_id": ObjectId(product_id)})
-            updated_product['_id'] = str(updated_product['_id'])  # Convert ObjectId to string
-            updated_product['seller_id'] = str(updated_product['seller_id'])  # Convert seller_id ObjectId to string
-            updated_product['type_categories'] = [str(cat) for cat in updated_product['type_categories']]  # Convert categories ObjectId to string
-        if 'reviews' in updated_product:
-            for review in updated_product['reviews']:
-                # Convert 'ratedby' field to ObjectId if it exists
+            for review in data['reviews']:
                 if 'ratedby' in review:
-                    review['ratedby'] = str(review['ratedby'])            
-            return updated_product
+                    review['ratedby'] = ObjectId(review['ratedby'])
+        
+        # Add an update timestamp
+        data['updated_at'] = datetime.utcnow()
+
+        # Update the product in the database
+        result = products_collection.update_one({"_id": ObjectId(product_id)}, {"$set": data})
+        
+        # Check if the update was successful
+        if result.modified_count > 0:
+            # Retrieve and format the updated product
+            updated_product = products_collection.find_one({"_id": ObjectId(product_id)})
+            updated_product['_id'] = str(updated_product['_id'])
+            updated_product['seller_id'] = str(updated_product['seller_id'])  # Convert seller_id ObjectId to string
+            updated_product['type_categories'] = [str(cat) for cat in updated_product['type_categories']]
+            
+            # Convert ObjectId fields in reviews if present
+            if 'reviews' in updated_product:
+                for review in updated_product['reviews']:
+                    if 'ratedby' in review:
+                        review['ratedby'] = str(review['ratedby'])
+
+            return updated_product, 200
         else:
-            return None
+            return {"error": "Product not found or no changes made."}, 404
     except Exception as e:
         raise Exception(f"Error updating product: {str(e)}")
-
 
 
 # def add_review_to_product_service(product_id, buyer_id, review_data):

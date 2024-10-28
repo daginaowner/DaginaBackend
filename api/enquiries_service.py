@@ -6,6 +6,7 @@ from .generateResp import generateJsonResponse
 #Gets the enquiry collection from the database
 enquiry_collection = DB["Enquiries"]
 buyer_collection = DB["Buyer"]
+seller_collection = DB["Seller"]
 
 def create_enquiry_service(data):
     try:
@@ -41,8 +42,15 @@ def get_enquiry_service(data):
     except Exception as e:
         return generateJsonResponse(success=False, status=400, message=str(e))
 
-def delete_enquiry_service(data):
+def delete_enquiry_service(data, auth):
     try:
+        tok_id = auth['_id']
+
+        #Code for checking the token must be of a seller
+        check = seller_collection.find_one({'_id': ObjectId(str(tok_id))})
+        if check == None:
+            return generateJsonResponse(success=False, status=401, message=f"{auth['email']} is not a valid seller")
+        
         ids = [ObjectId(str(x)) for x in data['_ids']]
         query = {"_id": {"$in": ids}}
         resp = enquiry_collection.delete_many(query)

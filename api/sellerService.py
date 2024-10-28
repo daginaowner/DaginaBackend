@@ -57,7 +57,7 @@ def seller_login_service(data):
                 'exp': datetime.datetime.now(datetime.UTC) + datetime.timedelta(minutes=100)
             }
             token = generate_token(payload)
-            return {"success":True, "data" : {'token': token, "_id":str(db_obj["_id"])}}
+            return {"success":True, "data" : {'token': token, "_id":str(db_obj["_id"]), 'email':email}}
             #return generateJsonResponse(success=True, status=200, message="Login successful", data={'token': token, "_id":str(db_obj["_id"])})
             #return {"status": token}
         else:

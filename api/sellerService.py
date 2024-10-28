@@ -247,7 +247,7 @@ def seller_feedback_service(sel_id):
             ]
         result = list(seller_collection.aggregate(pipeline))
         if len(result) == 0:
-            return generateJsonResponse(success=False, status=400, message=f"{sel_id} Seller doesn't exists")
+            return generateJsonResponse(success=False, status=400, message=f"No feedbacks available for {sel_id}")
             #return {"status": f"{sel_id} Seller doesn't exists"}
         arr = []
         for view in result:

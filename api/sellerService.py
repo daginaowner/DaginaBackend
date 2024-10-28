@@ -57,7 +57,7 @@ def seller_login_service(data):
                 'exp': datetime.datetime.now(datetime.UTC) + datetime.timedelta(minutes=100)
             }
             token = generate_token(payload)
-            return {"success":True, "data" : {'token': token, "_id":str(db_obj["_id"])}}
+            return {"success":True, "data" : {'token': token, "_id":str(db_obj["_id"]), 'email':email}}
             #return generateJsonResponse(success=True, status=200, message="Login successful", data={'token': token, "_id":str(db_obj["_id"])})
             #return {"status": token}
         else:
@@ -247,7 +247,7 @@ def seller_feedback_service(sel_id):
             ]
         result = list(seller_collection.aggregate(pipeline))
         if len(result) == 0:
-            return generateJsonResponse(success=False, status=400, message=f"{sel_id} Seller doesn't exists")
+            return generateJsonResponse(success=False, status=400, message=f"No feedbacks available for {sel_id}")
             #return {"status": f"{sel_id} Seller doesn't exists"}
         arr = []
         for view in result:

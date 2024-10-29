@@ -1,5 +1,5 @@
 from flask import Blueprint, request
-from .buyerService import buyer_signup_service, buyer_login_service, buyer_update_service, buyer_delete_service, buyer_details_service, buyer_wishlist_service, buyer_wishlist_add_service, buyer_wishlist_rem_service, buyer_addprodrev_service, buyer_addsellerrev_service
+from .buyerService import buyer_signup_service, buyer_login_service, buyer_update_service, buyer_delete_service, buyer_details_service, buyer_wishlist_service, buyer_wishlist_add_service, buyer_wishlist_rem_service, buyer_addprodrev_service, buyer_addsellerrev_service, get_allbuyers_service
 from .mongo_connect import DB
 from flask import request
 from dotenv import dotenv_values
@@ -128,6 +128,13 @@ def buyer_add_product_review():
     except Exception as e:
         return generateJsonResponse(success=False, status=400, message=str(e))
     
+@buyer_route.route("/getbuyers", methods=['POST'])
+def get_buyers():
+    try:
+        data = request.get_json()
+        return get_allbuyers_service(data)
+    except Exception as e:
+        return generateJsonResponse(success=False, status=400, message=str(e))
 
 @buyer_route.route("/buyer/addSellerReview", methods=['POST'])
 def buyer_add_seller_review():

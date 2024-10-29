@@ -235,6 +235,20 @@ def buyer_addprodrev_service(data, user_auth):
     except Exception as e:
         return generateJsonResponse(success=False, status=400, message=str(e))
     
+#Service for getting all buyers:
+def get_allbuyers_service(data):
+    try:
+        #Code required for implementing admin authentication
+        results = buyer_collection.find({},{'password':0})
+        if results.retrieved == 0:
+            generateJsonResponse(success=False, status=400, message="No buyers data available")
+        results = list(results)
+        for buyer in results:
+            buyer['_id'] = str(buyer['_id'])
+        return generateJsonResponse(success=True, status=200, message=f"{len(results)} Buyers found!", data={'buyers': results})
+
+    except Exception as e:
+        return generateJsonResponse(success=False, status=400, message=str(e))
 
 #Service for Adding Feedback by Buyers on Seller
 def buyer_addsellerrev_service(data, user_auth):
